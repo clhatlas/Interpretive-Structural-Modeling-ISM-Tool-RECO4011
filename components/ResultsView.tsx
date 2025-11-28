@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ISMResult, ISMElement } from '../types';
 import HierarchyGraph from './HierarchyGraph';
+import { Download, Printer } from 'lucide-react';
 
 interface Props {
   factors: ISMElement[];
@@ -11,6 +12,50 @@ interface Props {
 
 const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
   const [activeTab, setActiveTab] = useState<'graph' | 'irm' | 'frm' | 'levels'>('graph');
+
+  const handleDownloadPNG = () => {
+    const svgElement = document.getElementById('hierarchy-graph-svg') as unknown as SVGSVGElement;
+    if (!svgElement) return;
+
+    // Use XMLSerializer to convert SVG to string
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svgElement);
+    
+    // Create a canvas to draw the SVG
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const svgRect = svgElement.getBoundingClientRect();
+    
+    // Scale for better resolution
+    const scale = 2;
+    canvas.width = svgRect.width * scale;
+    canvas.height = svgRect.height * scale;
+    
+    if (ctx) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.scale(scale, scale);
+
+        const img = new Image();
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+        img.onload = () => {
+            ctx.drawImage(img, 0, 0);
+            const pngData = canvas.toDataURL('image/png');
+            
+            // Trigger download
+            const link = document.createElement('a');
+            link.href = pngData;
+            link.download = 'ISM_Hierarchy_Model.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   const renderMatrix = (matrix: number[][]) => (
     <div className="overflow-x-auto">
@@ -41,31 +86,48 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 no-print">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">ISM Model Analysis</h2>
           <p className="text-slate-500">Visual hierarchy and matrix computations.</p>
         </div>
-        <div className="flex gap-2 bg-white border border-slate-200 p-1 rounded-lg shadow-sm">
-          {(['graph', 'levels', 'frm', 'irm'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                activeTab === tab 
-                ? 'bg-indigo-600 text-white shadow' 
-                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              {tab === 'graph' ? 'Hierarchy Graph' : 
-               tab === 'levels' ? 'Level Partitions' :
-               tab === 'frm' ? 'Final Matrix' : 'Initial Matrix'}
-            </button>
-          ))}
+        <div className="flex flex-wrap gap-2">
+           <button 
+             onClick={handlePrint}
+             className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200 transition-colors text-sm font-medium"
+           >
+              <Printer className="w-4 h-4" /> Print PDF
+           </button>
+           {activeTab === 'graph' && (
+               <button 
+                 onClick={handleDownloadPNG}
+                 className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200 transition-colors text-sm font-medium"
+               >
+                  <Download className="w-4 h-4" /> Export PNG
+               </button>
+           )}
+           <div className="w-px h-8 bg-slate-300 mx-2 hidden md:block"></div>
+           <div className="flex gap-1 bg-white border border-slate-200 p-1 rounded-lg shadow-sm">
+            {(['graph', 'levels', 'frm', 'irm'] as const).map(tab => (
+                <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                    activeTab === tab 
+                    ? 'bg-indigo-600 text-white shadow' 
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+                >
+                {tab === 'graph' ? 'Graph' : 
+                tab === 'levels' ? 'Levels' :
+                tab === 'frm' ? 'Final Matrix' : 'Init. Matrix'}
+                </button>
+            ))}
+            </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-1 border border-slate-200 shadow-xl min-h-[500px]">
+      <div className="bg-white rounded-xl p-1 border border-slate-200 shadow-xl min-h-[500px] print-content">
         {activeTab === 'graph' && (
           <div className="p-4 h-full">
             <HierarchyGraph result={result} factors={factors} />
@@ -109,7 +171,7 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
         )}
       </div>
 
-      <div className="flex justify-between pt-4">
+      <div className="flex justify-between pt-4 no-print">
         <button
           onClick={onBack}
           className="px-6 py-3 text-slate-500 hover:text-slate-900 transition-colors"

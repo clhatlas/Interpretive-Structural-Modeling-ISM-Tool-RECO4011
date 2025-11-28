@@ -4,14 +4,14 @@ import FactorInput from './components/FactorInput';
 import SSIMGrid from './components/SSIMGrid';
 import ResultsView from './components/ResultsView';
 import { runISMAnalysis } from './services/ismLogic';
-import { LayoutDashboard, Wand2 } from 'lucide-react';
+import { HardHat, Wand2 } from 'lucide-react';
 
 // Fixed 10 factors F1-F10
 const FIXED_FACTORS: ISMElement[] = Array.from({ length: 10 }, (_, i) => ({
   id: `f${i + 1}`,
   name: `F${i + 1}`,
   category: "Confined Space Factor",
-  description: "Fixed Factor"
+  description: "Most Critical Factors"
 }));
 
 const FIXED_TOPIC = "Driving/Dependent Relationships of Factors of Confined Space Accidents";
@@ -54,11 +54,13 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-600 rounded-lg shadow-sm">
-              <LayoutDashboard className="w-5 h-5 text-white" />
+              <HardHat className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-              CritNet for Confined Space Safety
+            <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent hidden md:block">
+              SSIM Construction
             </h1>
+            <span className="text-slate-400 hidden md:block">|</span>
+            <p className="text-sm md:text-base font-semibold text-slate-700">Confined Space Critical Factors Network</p>
           </div>
           <div className="hidden md:flex items-center gap-4 text-sm font-medium text-slate-400">
             <span className={step === AppStep.DEFINE_FACTORS ? 'text-indigo-600 font-bold' : ''}>1. Factors</span>
@@ -71,7 +73,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-10">
+      <main className="max-w-7xl mx-auto px-6 py-10 print:p-0">
         
         {step === AppStep.DEFINE_FACTORS && (
           <div className="space-y-6 animate-in zoom-in-95 duration-500">

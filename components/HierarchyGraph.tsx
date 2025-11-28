@@ -178,7 +178,7 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
 
   return (
     <div ref={containerRef} className="w-full bg-white rounded-xl border border-slate-200 shadow-inner overflow-x-auto overflow-y-hidden">
-        <svg ref={svgRef} className="block min-w-[600px] mx-auto"></svg>
+        <svg id="hierarchy-graph-svg" ref={svgRef} className="block min-w-[600px] mx-auto"></svg>
     </div>
   );
 };

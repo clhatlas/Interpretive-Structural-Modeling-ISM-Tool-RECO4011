@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CritNet for Confined Space Safety</title>
+    <title>SSIM Construction - Confined Space Accidents Critical Factors Network</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -26,6 +26,41 @@
       }
       ::-webkit-scrollbar-thumb:hover {
         background: #94a3b8; 
+      }
+      
+      /* Print Styles for PDF Export */
+      @media print {
+        @page {
+          margin: 1.5cm;
+          size: landscape;
+        }
+        body {
+          background-color: white !important;
+          color: black !important;
+          print-color-adjust: exact;
+          -webkit-print-color-adjust: exact;
+        }
+        /* Hide UI elements */
+        .no-print, header, button {
+          display: none !important;
+        }
+        /* Make sure graph and tables are visible */
+        .print-content {
+          display: block !important;
+          width: 100% !important;
+          box-shadow: none !important;
+          border: none !important;
+          overflow: visible !important;
+        }
+        /* Ensure all tabs content is shown or handle tab logic for print */
+        /* For this specific app, we might just print what is visible, or force show specific things */
+        
+        /* Expand containers */
+        div {
+          overflow: visible !important;
+          height: auto !important;
+          max-height: none !important;
+        }
       }
     </style>
     <script>
