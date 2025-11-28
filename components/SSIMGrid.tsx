@@ -69,7 +69,7 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
           <p className="text-slate-500 text-sm mt-1">
              Define relationships in the upper triangle. 
              <span className="hidden md:inline ml-1 text-slate-400">
-               (Row $i$ vs Column $j$)
+               (Row i vs Column j)
              </span>
           </p>
         </div>

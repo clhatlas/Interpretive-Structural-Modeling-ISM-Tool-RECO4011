@@ -136,7 +136,7 @@ const InterrelationshipGraph: React.FC<Props> = ({ result, factors }) => {
     <div ref={containerRef} className="w-full bg-white rounded-xl border border-slate-200 shadow-inner overflow-hidden">
         <svg id="interrelationship-graph-svg" ref={svgRef} className="block mx-auto"></svg>
         <div className="p-4 text-center text-sm text-slate-500">
-            Figure 4: Interrelationships between barriers (Digraph) - Showing all direct connections.
+            Interrelationships between factors (Digraph).
             <div className="flex justify-center gap-6 mt-2 text-xs font-medium">
                 <span className="flex items-center gap-2">
                     <span className="w-6 h-0.5 bg-slate-400"></span> 

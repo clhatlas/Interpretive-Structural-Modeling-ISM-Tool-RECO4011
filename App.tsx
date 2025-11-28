@@ -64,7 +64,7 @@ const App: React.FC = () => {
               <HardHat className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent hidden md:block">
-              SSIM Construction
+              SSIM Construction (TEST)
             </h1>
             <span className="text-slate-400 hidden md:block">|</span>
             <p className="text-sm md:text-base font-semibold text-slate-700">Critical Factors Network</p>
