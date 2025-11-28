@@ -6,23 +6,22 @@ import ResultsView from './components/ResultsView';
 import { runISMAnalysis } from './services/ismLogic';
 import { HardHat, Wand2 } from 'lucide-react';
 
-// Fixed 12 factors using B-codes based on the BIM Barriers input
+// Fixed 11 factors based on the Sustainability Barriers input
 const FIXED_FACTORS: ISMElement[] = [
-  { id: 'B02', name: 'B02', description: 'Lack of domestic-oriented BIM tools', category: 'Technology' },
-  { id: 'B03', name: 'B03', description: 'Increased workload for model development', category: 'Process' },
-  { id: 'B07', name: 'B07', description: 'Negative attitude towards working collaboratively', category: 'People' },
-  { id: 'B08', name: 'B08', description: 'Lack of a well-established BIM-based workflow', category: 'Process' },
-  { id: 'B09', name: 'B09', description: 'Immature dispute resolution mechanism for BIM implementation', category: 'Policy' },
-  { id: 'B10', name: 'B10', description: 'Lack of professional interactivity', category: 'People' },
-  { id: 'B12', name: 'B12', description: 'Lack of research on BIM implementation in China', category: 'Environment' },
-  { id: 'B13', name: 'B13', description: 'Cost and time required for training', category: 'Cost' },
-  { id: 'B14', name: 'B14', description: 'Cost for BIM experts and tools', category: 'Cost' },
-  { id: 'B15', name: 'B15', description: 'Increased design costs', category: 'Cost' },
-  { id: 'B18', name: 'B18', description: 'Lack of BIM standards', category: 'Policy' },
-  { id: 'B19', name: 'B19', description: 'Lack of standard form of contract for BIM implementation', category: 'Policy' },
+  { id: 'F1', name: 'F1', description: 'Lack of commitment from top management', category: 'Management' },
+  { id: 'F2', name: 'F2', description: 'Financial Constraints', category: 'Cost' },
+  { id: 'F3', name: 'F3', description: 'Organizational culture inhibitive to sustainability/CSR', category: 'Organization' },
+  { id: 'F4', name: 'F4', description: 'Lack of new technology/materials and processes on sustainability', category: 'Technology' },
+  { id: 'F5', name: 'F5', description: 'Lack of awareness of benefits of sustainability', category: 'Knowledge' },
+  { id: 'F6', name: 'F6', description: 'Lack of green purchasing', category: 'Process' },
+  { id: 'F7', name: 'F7', description: 'Lack of regulations and enforcement of environment standards', category: 'Policy' },
+  { id: 'F8', name: 'F8', description: 'Lack of R&D on sustainability', category: 'Technology' },
+  { id: 'F9', name: 'F9', description: 'Lack of training/human expertise on sustainability', category: 'Knowledge' },
+  { id: 'F10', name: 'F10', description: 'Resistance to change and adopting innovation in sustainability', category: 'Organization' },
+  { id: 'F11', name: 'F11', description: 'Lack of performance metrics/evaluation standards on sustainability', category: 'Process' },
 ];
 
-const FIXED_TOPIC = "Driving/Dependent Relationships of Critical Factors";
+const FIXED_TOPIC = "Barriers to Sustainability Implementation";
 
 const App: React.FC = () => {
   // Initialize directly to Factor Definition step with fixed data
