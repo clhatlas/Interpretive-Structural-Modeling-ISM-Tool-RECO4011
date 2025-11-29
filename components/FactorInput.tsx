@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import { ISMElement } from '../types';
-import { Tag, Plus, Trash2, Edit2, Save, X, Upload, FileJson, FileText, Trash, FileDown, ArrowRight } from 'lucide-react';
+import { Tag, Plus, Trash2, Edit2, Save, X, Upload, FileJson, FileText, Trash, FileDown, ArrowRight, Check } from 'lucide-react';
 
 interface Props {
   factors: ISMElement[];
@@ -75,6 +75,11 @@ const FactorInput: React.FC<Props> = ({ factors, setFactors, onNext }) => {
   const [editValues, setEditValues] = useState<Partial<ISMElement>>({});
   const [isAdding, setIsAdding] = useState(false);
   const [newFactor, setNewFactor] = useState({ name: '', description: '', category: 'Management' });
+  
+  // Confirmation states to avoid window.confirm issues
+  const [clearConfirm, setClearConfirm] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const availableCategories = useMemo(() => {
@@ -99,22 +104,34 @@ const FactorInput: React.FC<Props> = ({ factors, setFactors, onNext }) => {
     setIsAdding(false);
   };
 
-  const handleDeleteFactor = (id: string) => {
-    // Standard confirm dialog
-    if (window.confirm("Are you sure you want to delete this factor?")) {
+  const handleSingleDeleteClick = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row click events
+    if (deleteConfirmId === id) {
+      // Confirmed
       setFactors(prevFactors => prevFactors.filter(f => f.id !== id));
+      setDeleteConfirmId(null);
+    } else {
+      // First click
+      setDeleteConfirmId(id);
+      // Auto-reset after 3 seconds
+      setTimeout(() => setDeleteConfirmId(current => current === id ? null : current), 3000);
     }
   };
 
-  const handleClearAll = () => {
-    if (window.confirm("Are you sure you want to delete ALL factors? This cannot be undone.")) {
+  const handleClearClick = () => {
+    if (clearConfirm) {
       setFactors([]);
+      setClearConfirm(false);
+    } else {
+      setClearConfirm(true);
+      setTimeout(() => setClearConfirm(false), 3000);
     }
   };
 
   const startEdit = (factor: ISMElement) => {
     setEditingId(factor.id);
     setEditValues({ ...factor });
+    setDeleteConfirmId(null); // Cancel any pending deletes
   };
 
   const saveEdit = () => {
@@ -131,12 +148,15 @@ const FactorInput: React.FC<Props> = ({ factors, setFactors, onNext }) => {
     for (let i = 1; i < lines.length; i++) {
         const line = lines[i];
         if (!line.trim()) continue;
-        // Basic CSV splitting handling quotes
         const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        
+        // Generate a new ID by default
         const factor: any = { id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) };
+        
         headers.forEach((h, idx) => {
             if (values[idx] !== undefined) {
-                if (h === 'id') factor.id = values[idx];
+                // Only use the CSV ID if it is non-empty
+                if (h === 'id' && values[idx].trim()) factor.id = values[idx].trim();
                 else if (h === 'name' || h === 'factor') factor.name = values[idx];
                 else if (h === 'description' || h === 'desc') factor.description = values[idx];
                 else if (h === 'category' || h === 'cat') factor.category = values[idx];
@@ -162,8 +182,12 @@ const FactorInput: React.FC<Props> = ({ factors, setFactors, onNext }) => {
             }
 
             if (Array.isArray(parsed) && parsed.length > 0) {
-                setFactors(parsed);
-                // Force a re-render or ensure state update is noticed
+                // Ensure all imported items have unique IDs
+                const processed = parsed.map(f => ({
+                    ...f,
+                    id: f.id || (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2))
+                }));
+                setFactors(processed);
             } else {
                 alert("No valid factors found.");
             }
@@ -230,8 +254,13 @@ const FactorInput: React.FC<Props> = ({ factors, setFactors, onNext }) => {
              </button>
            </div>
 
-           <button type="button" onClick={handleClearAll} className="px-3 py-2 bg-white border border-red-200 text-red-600 rounded-md hover:bg-red-50 text-xs font-medium flex items-center gap-2">
-             <Trash className="w-4 h-4" /> Clear
+           <button 
+             type="button" 
+             onClick={handleClearClick} 
+             className={`px-3 py-2 border rounded-md text-xs font-medium flex items-center gap-2 transition-colors ${clearConfirm ? 'bg-red-600 text-white border-red-700 hover:bg-red-700' : 'bg-white border-red-200 text-red-600 hover:bg-red-50'}`}
+           >
+             {clearConfirm ? <Check className="w-4 h-4" /> : <Trash className="w-4 h-4" />}
+             {clearConfirm ? "Confirm Clear?" : "Clear"}
            </button>
 
            <div className="w-px h-6 bg-slate-300 mx-2 hidden md:block"></div>
@@ -311,6 +340,7 @@ const FactorInput: React.FC<Props> = ({ factors, setFactors, onNext }) => {
           )}
           {factors.map((factor) => {
              const isEditing = editingId === factor.id;
+             const isDeleteConfirming = deleteConfirmId === factor.id;
              const catColor = getCategoryColorClasses(factor.category);
              
              if (isEditing) {
@@ -371,11 +401,10 @@ const FactorInput: React.FC<Props> = ({ factors, setFactors, onNext }) => {
                   </div>
                 </div>
                 
-                {/* Actions: Removed opacity-0 to ensure they are clickable on mobile/touch devices */}
-                <div className="flex items-center gap-1 ml-4">
+                <div className="flex items-center gap-1 ml-4 z-10">
                     <button 
                         type="button"
-                        onClick={() => startEdit(factor)}
+                        onClick={(e) => { e.stopPropagation(); startEdit(factor); }}
                         className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                         title="Edit"
                     >
@@ -383,11 +412,11 @@ const FactorInput: React.FC<Props> = ({ factors, setFactors, onNext }) => {
                     </button>
                     <button 
                         type="button"
-                        onClick={() => handleDeleteFactor(factor.id)}
-                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                        title="Delete"
+                        onClick={(e) => handleSingleDeleteClick(factor.id, e)}
+                        className={`p-2 rounded transition-colors ${isDeleteConfirming ? 'bg-red-600 text-white shadow-sm hover:bg-red-700' : 'text-slate-400 hover:text-red-600 hover:bg-red-50'}`}
+                        title={isDeleteConfirming ? "Confirm Delete" : "Delete"}
                     >
-                        <Trash2 className="w-4 h-4" />
+                        {isDeleteConfirming ? <Trash2 className="w-4 h-4 animate-pulse" /> : <Trash2 className="w-4 h-4" />}
                     </button>
                 </div>
               </div>

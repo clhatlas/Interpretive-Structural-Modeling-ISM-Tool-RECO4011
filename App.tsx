@@ -129,6 +129,9 @@ const App: React.FC = () => {
                                 <p className="text-slate-500 pl-10">
                                     Input the critical risk factors or barriers. For efficiency, download the CSV template and upload large datasets.
                                 </p>
+                                <p className="text-slate-500 pl-10 mt-1 text-xs italic">
+                                    Import function is available for JSON and CSV file.
+                                </p>
                                 <div className="pl-10 mt-2">
                                   <div className="inline-flex gap-2 text-xs bg-slate-50 p-2 rounded border border-slate-200 text-slate-500">
                                      <span>Tip: Use <strong>Import</strong> for bulk entry.</span>
