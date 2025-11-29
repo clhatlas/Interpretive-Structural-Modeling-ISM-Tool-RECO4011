@@ -101,7 +101,8 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
     const width = containerRef.current.clientWidth || 600;
     const height = 500;
     // Increased margins to prevent clipping of axis labels and extreme points
-    const margin = { top: 40, right: 60, bottom: 60, left: 60 };
+    // top increased to 60 to allow space for labels/legend
+    const margin = { top: 60, right: 60, bottom: 60, left: 60 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
@@ -388,7 +389,7 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
         {/* Chart Section */}
         <div ref={containerRef} className="w-full bg-white rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
             <svg ref={svgRef} className="block mx-auto"></svg>
-            <div className="absolute top-4 right-4 bg-white/90 p-2 text-xs border border-slate-200 rounded shadow-sm">
+            <div className="absolute top-2 right-2 bg-white/90 p-2 text-xs border border-slate-200 rounded shadow-sm z-10">
                 <p><strong>Split Point:</strong> {splitPoint.toFixed(1)}</p>
                 <p><strong>Total Factors:</strong> {factors.length}</p>
             </div>
