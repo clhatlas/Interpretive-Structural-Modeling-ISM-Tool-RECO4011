@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { ISMElement, ISMResult } from '../types';
 
@@ -53,7 +54,7 @@ const AnalysisTable: React.FC<Props> = ({ factors, result }) => {
       <table className="w-full border-collapse text-sm text-left">
         <thead className="bg-slate-50 text-slate-700 font-semibold">
           <tr>
-            <th className="p-3 border border-slate-200 w-20">Barrier</th>
+            <th className="p-3 border border-slate-200 w-20">Factor</th>
             <th className="p-3 border border-slate-200">Reachability Set</th>
             <th className="p-3 border border-slate-200">Antecedent Set</th>
             <th className="p-3 border border-slate-200">Intersection</th>

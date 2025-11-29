@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { AppStep, ISMElement, SSIMData, ISMResult } from './types';
 import FactorInput from './components/FactorInput';
 import SSIMGrid from './components/SSIMGrid';
 import ResultsView from './components/ResultsView';
 import { runISMAnalysis } from './services/ismLogic';
-import { HardHat, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import { HardHat, BookOpen, ChevronDown, ChevronUp, Construction } from 'lucide-react';
 
 // Default factors based on the Sustainability Barriers input
 const DEFAULT_FACTORS: ISMElement[] = [
@@ -60,92 +61,110 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 text-slate-900 selection:bg-emerald-500/30 flex flex-col">
-      {/* Header */}
-      <header className="border-b border-emerald-100 bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-600 rounded-lg shadow-md shadow-emerald-200">
-              <HardHat className="w-5 h-5 text-white" />
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
+      {/* Professional Header */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between py-3">
+          <div className="flex items-center gap-4">
+            {/* Realistic Construction Logo Badge */}
+            <div className="flex items-center justify-center w-12 h-12 bg-slate-900 rounded-md shadow-sm border-b-2 border-yellow-500">
+               <HardHat className="w-8 h-8 text-yellow-500" strokeWidth={1.5} />
             </div>
-            <h1 className="text-xl font-bold text-emerald-800 hidden md:block whitespace-nowrap">
-              ISM Tool
-            </h1>
-            <span className="text-emerald-200 hidden md:block">|</span>
-            <p className="text-xs md:text-sm lg:text-base font-semibold text-emerald-900 truncate max-w-[200px] md:max-w-none">
-                SSIM & MICMAC Analysis (Trial Version)
-            </p>
+            
+            <div className="flex flex-col justify-center">
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-none">
+                ISM Tool
+              </h1>
+              <p className="text-xs text-slate-500 font-medium tracking-wide mt-1 uppercase">
+                SSIM & MICMAC Analysis <span className="text-yellow-600 font-bold px-1 bg-yellow-50 rounded border border-yellow-100 ml-1">TRIAL</span>
+              </p>
+            </div>
           </div>
-          <div className="hidden md:flex items-center gap-4 text-sm font-medium text-slate-400">
-            <span className={step === AppStep.DEFINE_FACTORS ? 'text-emerald-700 font-bold' : ''}>1. Factors</span>
-            <span>&rarr;</span>
-            <span className={step === AppStep.FILL_SSIM ? 'text-emerald-700 font-bold' : ''}>2. Relations</span>
-            <span>&rarr;</span>
-            <span className={step === AppStep.ANALYSIS_RESULT ? 'text-emerald-700 font-bold' : ''}>3. Model</span>
+          
+          <div className="hidden md:flex items-center bg-slate-100 rounded-lg p-1">
+            <div className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${step === AppStep.DEFINE_FACTORS ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-500'}`}>
+              1. Factors
+            </div>
+            <div className="text-slate-300 px-2">/</div>
+            <div className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${step === AppStep.FILL_SSIM ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-500'}`}>
+              2. SSIM Matrix
+            </div>
+            <div className="text-slate-300 px-2">/</div>
+            <div className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${step === AppStep.ANALYSIS_RESULT ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-500'}`}>
+              3. Analysis
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-10 print:p-0 flex-grow w-full">
+      <main className="max-w-7xl mx-auto px-6 py-8 print:p-0 flex-grow w-full">
         
         {step === AppStep.DEFINE_FACTORS && (
-          <div className="space-y-6 animate-in zoom-in-95 duration-500">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
              
              {/* User Manual / Instructions */}
-             <div className="bg-white rounded-xl border border-emerald-100 shadow-sm overflow-hidden">
+             <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                 <div 
-                    className="p-4 bg-emerald-50/50 flex items-center justify-between cursor-pointer border-b border-emerald-50 hover:bg-emerald-50 transition-colors"
+                    className="p-4 bg-slate-50 flex items-center justify-between cursor-pointer border-b border-slate-200 hover:bg-slate-100 transition-colors"
                     onClick={() => setIsManualOpen(!isManualOpen)}
                 >
-                    <div className="flex items-center gap-2 text-emerald-900 font-bold">
-                        <BookOpen className="w-5 h-5" />
-                        <h2>User Manual & Instructions</h2>
+                    <div className="flex items-center gap-3 text-slate-800 font-bold">
+                        <div className="p-1.5 bg-white border border-slate-200 rounded text-slate-600">
+                          <BookOpen className="w-5 h-5" />
+                        </div>
+                        <h2 className="text-base text-lg">User Manual & Workflow</h2>
                     </div>
-                    {isManualOpen ? <ChevronUp className="w-5 h-5 text-emerald-700" /> : <ChevronDown className="w-5 h-5 text-emerald-700" />}
+                    {isManualOpen ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
                 </div>
                 
                 {isManualOpen && (
-                    <div className="p-6 space-y-6 text-slate-700 text-sm leading-relaxed">
-                        <p className="text-base">
-                            Welcome to the ISM Tool. This platform guides you through the process of Interpretive Structural Modelling (ISM) to analyze complex relationships between various factors.
-                        </p>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="space-y-2">
-                                <h3 className="font-bold text-emerald-800 uppercase text-lg tracking-wider">Step 1: Define Factors</h3>
-                                <p>
-                                    Input the critical factors for your study. You can add them manually, or for large datasets, use the 
-                                    <strong> Import</strong> feature.
+                    <div className="p-8 space-y-8 text-slate-600 text-sm leading-relaxed">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-sm">1</span>
+                                    <h3 className="font-bold text-slate-900 text-lg">Define Factors</h3>
+                                </div>
+                                <p className="text-slate-500 pl-10">
+                                    Input the critical risk factors or barriers. For efficiency, download the CSV template and upload large datasets.
                                 </p>
-                                <ul className="list-disc list-inside text-xs text-slate-500 space-y-1 ml-1">
-                                    <li>Use the <strong>Template</strong> button to download a formatted CSV file.</li>
-                                    <li>Fill in your factors (ID, Name, Description, Category) and upload it back using <strong>Import</strong>.</li>
-                                </ul>
+                                <div className="pl-10 mt-2">
+                                  <div className="inline-flex gap-2 text-xs bg-slate-50 p-2 rounded border border-slate-200 text-slate-500">
+                                     <span>Tip: Use <strong>Import</strong> for bulk entry.</span>
+                                  </div>
+                                </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <h3 className="font-bold text-emerald-800 uppercase text-lg tracking-wider">Step 2: Build SSIM</h3>
-                                <p>
-                                    Establish the contextual relationships between factors in the Structural Self-Interaction Matrix (SSIM).
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-sm">2</span>
+                                    <h3 className="font-bold text-slate-900 text-lg">Build SSIM</h3>
+                                </div>
+                                <p className="text-slate-500 pl-10">
+                                    Establish pairwise relationships in the Structural Self-Interaction Matrix.
                                 </p>
-                                <ul className="list-none text-xs text-slate-500 space-y-1">
-                                    <li><span className="font-bold text-emerald-600">V</span>: Factor <i>i</i> influences <i>j</i></li>
-                                    <li><span className="font-bold text-amber-600">A</span>: Factor <i>j</i> influences <i>i</i></li>
-                                    <li><span className="font-bold text-blue-600">X</span>: Mutual influence (<i>i</i> &harr; <i>j</i>)</li>
-                                    <li><span className="font-bold text-slate-400">O</span>: No relationship</li>
-                                </ul>
+                                <div className="pl-10 grid grid-cols-2 gap-2 text-xs">
+                                    <div className="bg-emerald-50 text-emerald-800 px-2 py-1 rounded border border-emerald-100 font-bold text-center">V (Forward)</div>
+                                    <div className="bg-amber-50 text-amber-800 px-2 py-1 rounded border border-amber-100 font-bold text-center">A (Reverse)</div>
+                                    <div className="bg-blue-50 text-blue-800 px-2 py-1 rounded border border-blue-100 font-bold text-center">X (Mutual)</div>
+                                    <div className="bg-slate-100 text-slate-500 px-2 py-1 rounded border border-slate-200 font-bold text-center">O (None)</div>
+                                </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <h3 className="font-bold text-emerald-800 uppercase text-lg tracking-wider">Step 3: Analyze Model</h3>
-                                <p>
-                                    The tool automatically calculates the Reachability Matrix, checks for Transitivity, partitions levels, and generates:
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-sm">3</span>
+                                    <h3 className="font-bold text-slate-900 text-lg">Analysis</h3>
+                                </div>
+                                <p className="text-slate-500 pl-10">
+                                    Automated generation of structural models:
                                 </p>
-                                <ul className="list-disc list-inside text-xs text-slate-500 space-y-1 ml-1">
-                                    <li><strong>Hierarchy Graph</strong>: A multi-level structural model.</li>
-                                    <li><strong>MICMAC Analysis</strong>: Driving vs. Dependence power quadrant chart.</li>
-                                    <li><strong>Interrelationship Digraph</strong>: Network visualization of connections.</li>
+                                <ul className="pl-14 list-disc space-y-1 text-slate-500">
+                                    <li>Reachability Matrix</li>
+                                    <li>Hierarchy Graph</li>
+                                    <li>Interrelationship Digraph</li>
+                                    <li>MICMAC Quadrants</li>
                                 </ul>
                             </div>
                         </div>
@@ -183,11 +202,15 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Footer Disclaimer */}
-      <footer className="w-full border-t border-slate-200 bg-white py-6 mt-auto print:hidden">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-            <p className="text-xs text-slate-400">
-                Disclaimer: This Web App is made by Atlas Cheung with the help of Google AI Studio for academic use only. This application collects no personal information.
+      {/* Professional Footer */}
+      <footer className="w-full border-t border-slate-200 bg-white py-8 mt-auto print:hidden">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col items-center">
+            <div className="flex items-center gap-2 mb-2 opacity-50">
+               <Construction className="w-4 h-4" />
+               <span className="text-sm font-bold tracking-wider uppercase">ISM Construction Tool</span>
+            </div>
+            <p className="text-xs text-slate-400 max-w-2xl text-center leading-relaxed">
+                Disclaimer: The ISM Tool is built with React, Tailwind and Gemini by Atlas Cheung for academic use only. The tool is intended for educational and research purposes to support Interpretive Structural Modelling analysis. Results generated by this application are provided as-is and should be critically evaluated before any practical use. This application collects no personal information.
             </p>
         </div>
       </footer>

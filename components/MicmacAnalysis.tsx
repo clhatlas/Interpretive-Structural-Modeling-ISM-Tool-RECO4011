@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import { ISMResult, ISMElement } from '../types';
@@ -127,6 +128,53 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
       .domain([0, maxVal + 1])
       .range([innerHeight, 0]);
 
+    // Calculate Split Coordinates
+    const splitX = xScale(splitPoint);
+    const splitY = yScale(splitPoint);
+
+    // --- Background Shading for Quadrants ---
+    
+    // IV. Driver (Top Left): High Drive, Low Dep
+    // x: 0 -> splitX, y: 0 -> splitY (Remember y=0 is top)
+    g.append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", splitX)
+      .attr("height", splitY)
+      .attr("fill", "#fff1f2") // Rose-50
+      .attr("opacity", 0.6);
+
+    // III. Linkage (Top Right): High Drive, High Dep
+    // x: splitX -> innerWidth, y: 0 -> splitY
+    g.append("rect")
+      .attr("x", splitX)
+      .attr("y", 0)
+      .attr("width", innerWidth - splitX)
+      .attr("height", splitY)
+      .attr("fill", "#faf5ff") // Purple-50
+      .attr("opacity", 0.6);
+
+    // I. Autonomous (Bottom Left): Low Drive, Low Dep
+    // x: 0 -> splitX, y: splitY -> innerHeight
+    g.append("rect")
+      .attr("x", 0)
+      .attr("y", splitY)
+      .attr("width", splitX)
+      .attr("height", innerHeight - splitY)
+      .attr("fill", "#ecfdf5") // Emerald-50
+      .attr("opacity", 0.6);
+
+    // II. Dependent (Bottom Right): Low Drive, High Dep
+    // x: splitX -> innerWidth, y: splitY -> innerHeight
+    g.append("rect")
+      .attr("x", splitX)
+      .attr("y", splitY)
+      .attr("width", innerWidth - splitX)
+      .attr("height", innerHeight - splitY)
+      .attr("fill", "#fffbeb") // Amber-50
+      .attr("opacity", 0.6);
+
+
     // Grid Lines
     const makeXGrid = () => d3.axisBottom(xScale).ticks(maxVal + 1);
     const makeYGrid = () => d3.axisLeft(yScale).ticks(maxVal + 1);
@@ -170,16 +218,13 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
       .attr("fill", "#334155")
       .text("Driving Power");
 
-    // Quadrant Lines (The Crosshair)
-    const splitX = xScale(splitPoint);
-    const splitY = yScale(splitPoint);
-
+    // Quadrant Separator Lines (The Crosshair)
     g.append("line")
       .attr("x1", splitX)
       .attr("y1", 0)
       .attr("x2", splitX)
       .attr("y2", innerHeight)
-      .attr("stroke", "#1e293b")
+      .attr("stroke", "#334155")
       .attr("stroke-width", 2)
       .attr("stroke-dasharray", "4"); 
 
@@ -188,7 +233,7 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
       .attr("y1", splitY)
       .attr("x2", innerWidth)
       .attr("y2", splitY)
-      .attr("stroke", "#1e293b")
+      .attr("stroke", "#334155")
       .attr("stroke-width", 2)
       .attr("stroke-dasharray", "4");
 
@@ -202,7 +247,7 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
        .attr("dominant-baseline", "hanging")
        .attr("font-weight", "bold")
        .attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif")
-       .attr("fill", "#475569")
+       .attr("fill", "#be123c") // Rose-700
        .style("font-size", "14px")
        .text("IV. Driver (Independent)");
 
@@ -214,7 +259,7 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
        .attr("dominant-baseline", "hanging")
        .attr("font-weight", "bold")
        .attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif")
-       .attr("fill", "#475569")
+       .attr("fill", "#7e22ce") // Purple-700
        .style("font-size", "14px")
        .text("III. Linkage");
 
@@ -225,7 +270,7 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
        .attr("dominant-baseline", "auto")
        .attr("font-weight", "bold")
        .attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif")
-       .attr("fill", "#475569")
+       .attr("fill", "#047857") // Emerald-700
        .style("font-size", "14px")
        .text("I. Autonomous");
 
@@ -237,7 +282,7 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
        .attr("dominant-baseline", "auto")
        .attr("font-weight", "bold")
        .attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif")
-       .attr("fill", "#475569")
+       .attr("fill", "#b45309") // Amber-700
        .style("font-size", "14px")
        .text("II. Dependent");
 
@@ -264,13 +309,14 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
       .attr("class", "dot-group")
       .attr("cx", d => xScale(d.dependencePower))
       .attr("cy", d => yScale(d.drivingPower))
-      .attr("r", d => d.factors.length > 1 ? 8 : 6) // Slightly larger for groups
-      .attr("fill", d => d.factors.length > 1 ? "#334155" : getCategoryColorHex(d.factors[0].category)) // Dark slate for groups, category color for single
+      .attr("r", d => d.factors.length > 1 ? 8 : 6)
+      // Uniform color (Dark Slate) instead of category color
+      .attr("fill", "#1e293b") 
       .attr("stroke", "#fff")
       .attr("stroke-width", 2)
       .attr("cursor", "pointer")
       .on("mouseover", function(event, d) {
-          d3.select(this).attr("r", d.factors.length > 1 ? 10 : 8);
+          d3.select(this).attr("r", d.factors.length > 1 ? 10 : 8).attr("fill", "#000");
           
           let tooltipHtml = `<strong>Dr: ${d.drivingPower}, Dep: ${d.dependencePower}</strong><hr style="margin:4px 0; border-color:#555"/>`;
           d.factors.forEach(f => {
@@ -288,7 +334,7 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
             .style("left", (mx + 15) + "px");
       })
       .on("mouseout", function(event, d) {
-          d3.select(this).attr("r", d.factors.length > 1 ? 8 : 6);
+          d3.select(this).attr("r", d.factors.length > 1 ? 8 : 6).attr("fill", "#1e293b");
           tooltip.style("visibility", "hidden");
       });
 
@@ -303,7 +349,7 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
       .attr("font-size", "10px")
       .attr("font-weight", "bold")
       .attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif")
-      .attr("fill", "#334155");
+      .attr("fill", "#1e293b");
 
     return () => {
         tooltip.remove();

@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+
+import React, { useEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import { ISMResult, ISMElement } from '../types';
 import { getCategoryColorHex } from './FactorInput';
@@ -18,14 +19,25 @@ const InterrelationshipGraph: React.FC<Props> = ({ result, factors }) => {
     // Clear previous
     d3.select(svgRef.current).selectAll("*").remove();
 
-    // USE INITIAL REACHABILITY MATRIX to show ALL defined connections (SSIM inputs)
+    // USE INITIAL REACHABILITY MATRIX
     const { initialReachabilityMatrix } = result;
-    const width = containerRef.current.clientWidth || 800;
-    const height = 600;
-    const radius = Math.min(width, height) / 2 - 60; // Radius of the circle layout
+    const containerWidth = containerRef.current.clientWidth || 800;
+    
+    // Calculate Legend Width requirements
+    const categories = Array.from(new Set(factors.map(f => f.category).filter(Boolean))) as string[];
+    const itemWidth = 160; // Increased width to 160px
+    const minFooterWidth = categories.length * itemWidth + 100; // Extra padding
+
+    // Width MUST adapt to footer to prevent cutting off the legend
+    const width = Math.max(containerWidth, minFooterWidth);
+    
+    const footerHeight = 100; // Extra space for Title & Legends
+    const height = 600 + footerHeight; 
+    
+    const radius = Math.min(width, 600) / 2 - 60; 
     const nodeRadius = 24;
     const centerX = width / 2;
-    const centerY = height / 2;
+    const centerY = 300; // Center of graph area
 
     const svg = d3.select(svgRef.current)
       .attr("width", width)
@@ -34,25 +46,8 @@ const InterrelationshipGraph: React.FC<Props> = ({ result, factors }) => {
       .style("background-color", "#ffffff");
 
     // --- Marker Positioning Logic ---
-    // We use markerUnits="userSpaceOnUse" for precise pixel control.
-    // Node Radius = 24.
-    // Buffer = 5 (gap between node and arrow tip).
-    // Arrow Tip Distance from Center = 29.
-    
     const arrowDist = nodeRadius + 5;
-
-    // 1. END Marker (Points Forward >)
-    // Path: 0,-5 L10,0 L0,5 (Tip at 10)
-    // We want Tip (10) to be at `Center - 29`.
-    // refX anchors to Center.
-    // So 10 - refX = -29  =>  refX = 39.
     const refXEnd = 10 + arrowDist;
-
-    // 2. START Marker (Points Backward <)
-    // Path: 10,-5 L0,0 L10,5 (Tip at 0)
-    // We want Tip (0) to be at `Center + 29` (Start of line).
-    // refX anchors to Center.
-    // So 0 - refX = 29 => refX = -29.
     const refXStart = -arrowDist;
 
     const defs = svg.append("defs");
@@ -85,9 +80,7 @@ const InterrelationshipGraph: React.FC<Props> = ({ result, factors }) => {
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", "#8b5cf6");
 
-    // Mutual Start Arrow (Purple) - Points "Back" relative to tangent
-    // Note: orient="auto" aligns X-axis with tangent A->B.
-    // We define arrow pointing LEFT (<) in marker space.
+    // Mutual Start Arrow (Purple)
     defs.append("marker")
       .attr("id", "arrowhead-start-purple")
       .attr("viewBox", "0 -5 10 10")
@@ -112,7 +105,7 @@ const InterrelationshipGraph: React.FC<Props> = ({ result, factors }) => {
         };
     });
 
-    // Process Links - Deduplicate Mutuals
+    // Process Links
     const links: any[] = [];
     const processedMutuals = new Set<string>();
 
@@ -122,22 +115,13 @@ const InterrelationshipGraph: React.FC<Props> = ({ result, factors }) => {
                 const isMutual = initialReachabilityMatrix[j][i] === 1;
                 
                 if (isMutual) {
-                    // Unique key for the pair to avoid adding A-B and B-A separately
                     const key = [Math.min(i, j), Math.max(i, j)].join('-');
                     if (!processedMutuals.has(key)) {
-                        links.push({ 
-                            source: nodes[i], 
-                            target: nodes[j],
-                            type: 'mutual' 
-                        });
+                        links.push({ source: nodes[i], target: nodes[j], type: 'mutual' });
                         processedMutuals.add(key);
                     }
                 } else {
-                    links.push({ 
-                        source: nodes[i], 
-                        target: nodes[j],
-                        type: 'direct' 
-                    });
+                    links.push({ source: nodes[i], target: nodes[j], type: 'direct' });
                 }
             }
         }
@@ -148,10 +132,7 @@ const InterrelationshipGraph: React.FC<Props> = ({ result, factors }) => {
         .data(links)
         .enter()
         .append("path")
-        .attr("d", (d: any) => {
-            // Straight line for everything
-            return `M${d.source.x},${d.source.y}L${d.target.x},${d.target.y}`;
-        })
+        .attr("d", (d: any) => `M${d.source.x},${d.source.y}L${d.target.x},${d.target.y}`)
         .attr("fill", "none")
         .attr("stroke", (d:any) => d.type === 'mutual' ? "#8b5cf6" : "#94a3b8")
         .attr("stroke-width", (d:any) => d.type === 'mutual' ? 2.5 : 1.5)
@@ -185,29 +166,54 @@ const InterrelationshipGraph: React.FC<Props> = ({ result, factors }) => {
         .attr("fill", "#1e293b")
         .style("pointer-events", "none");
 
+    // --- Footer: Title & Legend ---
+    const footerY = 600 + 20;
+    const footerGroup = svg.append("g").attr("transform", `translate(0, ${footerY})`);
+
+    // Title
+    footerGroup.append("text")
+      .attr("x", width / 2)
+      .attr("y", 0)
+      .attr("text-anchor", "middle")
+      .attr("font-weight", "bold")
+      .attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif")
+      .attr("font-size", "18px")
+      .attr("fill", "#1e293b")
+      .text("Interrelationships between factors / barriers");
+
+    // Legend 1: Arrows
+    const arrowLegend = footerGroup.append("g").attr("transform", `translate(${width/2 - 150}, 30)`);
+    
+    // One-way
+    arrowLegend.append("line").attr("x1", 0).attr("y1", 0).attr("x2", 30).attr("y2", 0).attr("stroke", "#94a3b8").attr("stroke-width", 2);
+    arrowLegend.append("text").attr("x", 35).attr("y", 4).text("One-way Arrow (V/A)").attr("font-size", "12px").attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif").attr("fill", "#475569");
+    
+    // Two-way
+    const twoWayGroup = arrowLegend.append("g").attr("transform", `translate(170, 0)`);
+    twoWayGroup.append("line").attr("x1", 0).attr("y1", 0).attr("x2", 30).attr("y2", 0).attr("stroke", "#8b5cf6").attr("stroke-width", 2);
+    twoWayGroup.append("text").attr("x", 35).attr("y", 4).text("Two-way Arrow (X)").attr("font-size", "12px").attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif").attr("fill", "#475569");
+
+
+    // Legend 2: Categories
+    const totalLegendWidth = categories.length * itemWidth;
+    let currentX = (width - totalLegendWidth) / 2;
+
+    const catLegendGroup = footerGroup.append("g").attr("transform", `translate(0, 60)`);
+    
+    categories.forEach(cat => {
+        const color = getCategoryColorHex(cat);
+        const g = catLegendGroup.append("g").attr("transform", `translate(${currentX}, 0)`);
+        
+        g.append("circle").attr("cx", 0).attr("cy", 0).attr("r", 5).attr("fill", color).attr("stroke", "#cbd5e1");
+        g.append("text").attr("x", 10).attr("y", 4).text(cat).attr("font-size", "11px").attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif").attr("fill", "#475569");
+        currentX += itemWidth;
+    });
+
   }, [result, factors]);
 
   return (
     <div ref={containerRef} className="w-full bg-white rounded-xl border border-slate-200 shadow-inner overflow-hidden">
         <svg id="interrelationship-graph-svg" ref={svgRef} className="block mx-auto"></svg>
-        <div className="p-4 text-center text-sm text-slate-500 font-sans">
-            Interrelationships between factors (Digraph). Nodes colored by category.
-            <div className="flex justify-center gap-6 mt-2 text-xs font-medium">
-                <span className="flex items-center gap-2">
-                    <span className="w-6 h-0.5 bg-slate-400 relative">
-                        <span className="absolute right-0 -top-1 border-l-4 border-l-slate-400 border-t-4 border-t-transparent border-b-4 border-b-transparent"></span>
-                    </span> 
-                    One-way (Direct)
-                </span>
-                <span className="flex items-center gap-2">
-                    <span className="w-6 h-0.5 bg-purple-500 relative">
-                        <span className="absolute -left-1 -top-1 border-r-4 border-r-purple-500 border-t-4 border-t-transparent border-b-4 border-b-transparent"></span>
-                        <span className="absolute -right-1 -top-1 border-l-4 border-l-purple-500 border-t-4 border-t-transparent border-b-4 border-b-transparent"></span>
-                    </span> 
-                    Two-way (Mutual)
-                </span>
-            </div>
-        </div>
     </div>
   );
 };

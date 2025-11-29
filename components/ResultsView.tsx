@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+
+import React, { useState, useRef } from 'react';
 import { ISMResult, ISMElement } from '../types';
 import HierarchyGraph from './HierarchyGraph';
 import InterrelationshipGraph from './InterrelationshipGraph';
 import AnalysisTable from './AnalysisTable';
 import MicmacAnalysis from './MicmacAnalysis';
-import { Download, Printer } from 'lucide-react';
+import { Download, Printer, ArrowLeft, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import html2canvas from 'html2canvas';
 
 interface Props {
   factors: ISMElement[];
@@ -15,82 +17,220 @@ interface Props {
 
 const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
   const [activeTab, setActiveTab] = useState<'hierarchy' | 'digraph' | 'micmac' | 'analysis' | 'irm' | 'frm'>('hierarchy');
+  const exportRef = useRef<HTMLDivElement>(null);
 
-  const handleDownloadPNG = () => {
-    // Note: Added micmac logic to png export if needed, 
-    // but the generic ID selector needs to match the rendered component.
-    let svgId = '';
-    if (activeTab === 'digraph') svgId = 'interrelationship-graph-svg';
-    else if (activeTab === 'hierarchy') svgId = 'hierarchy-graph-svg';
-    else return; // Only support simple export for these two for now
-
-    const svgElement = document.getElementById(svgId) as unknown as SVGSVGElement;
-    if (!svgElement) return;
-
-    // Use XMLSerializer to convert SVG to string
-    const serializer = new XMLSerializer();
-    const svgString = serializer.serializeToString(svgElement);
-    
-    // Create a canvas to draw the SVG
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const svgRect = svgElement.getBoundingClientRect();
-    
-    // Scale for better resolution
-    const scale = 2;
-    canvas.width = svgRect.width * scale;
-    canvas.height = svgRect.height * scale;
-    
-    if (ctx) {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.scale(scale, scale);
-
-        const img = new Image();
-        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
-        img.onload = () => {
-            ctx.drawImage(img, 0, 0);
-            const pngData = canvas.toDataURL('image/png');
+  const handleDownloadPNG = async () => {
+    // Method 1: SVG Serializer (Best for pure SVG Graphs like Hierarchy/Digraph)
+    if (activeTab === 'digraph' || activeTab === 'hierarchy') {
+        let svgId = '';
+        if (activeTab === 'digraph') svgId = 'interrelationship-graph-svg';
+        else if (activeTab === 'hierarchy') svgId = 'hierarchy-graph-svg';
+        
+        const svgElement = document.getElementById(svgId) as unknown as SVGSVGElement;
+        if (svgElement) {
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(svgElement);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
             
-            // Trigger download
+            // Use viewBox for true dimensions to avoid clipping if container is smaller
+            const vbWidth = svgElement.viewBox.baseVal.width;
+            const vbHeight = svgElement.viewBox.baseVal.height;
+            
+            const scale = 2; // High resolution
+            const padding = 50; // Add white padding around the image
+            
+            canvas.width = (vbWidth + padding * 2) * scale;
+            canvas.height = (vbHeight + padding * 2) * scale;
+            
+            if (ctx) {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const img = new Image();
+                img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+                img.onload = () => {
+                    // Draw image centered with padding
+                    ctx.drawImage(img, padding * scale, padding * scale, vbWidth * scale, vbHeight * scale);
+                    const link = document.createElement('a');
+                    link.href = canvas.toDataURL('image/png');
+                    link.download = `ISM_${activeTab === 'digraph' ? 'Digraph' : 'Hierarchy'}.png`;
+                    link.click();
+                };
+            }
+            return;
+        }
+    }
+
+    // Method 2: html2canvas (For Mixed HTML/SVG content like Tables, MICMAC)
+    if (exportRef.current) {
+        try {
+            const canvas = await html2canvas(exportRef.current, {
+                backgroundColor: '#ffffff',
+                scale: 2, // High resolution
+                logging: false,
+                onclone: (clonedDoc) => {
+                    // Fix clipping issues by expanding container and removing scrollbars in the clone
+                    const element = clonedDoc.querySelector('.print-content') as HTMLElement;
+                    if (element) {
+                        element.style.width = 'fit-content';
+                        element.style.height = 'auto';
+                        element.style.overflow = 'visible';
+                        element.style.padding = '50px'; // Add generous padding to ensure margins/keys are visible
+                        
+                        // Expand all internal scrollable tables
+                        const scrollables = element.querySelectorAll('.overflow-x-auto');
+                        scrollables.forEach(el => {
+                            (el as HTMLElement).style.overflow = 'visible';
+                            (el as HTMLElement).style.width = 'auto';
+                            (el as HTMLElement).style.display = 'block';
+                        });
+                    }
+                }
+            });
             const link = document.createElement('a');
-            link.href = pngData;
-            link.download = `ISM_${activeTab === 'digraph' ? 'Digraph' : 'Hierarchy'}.png`;
-            document.body.appendChild(link);
+            link.href = canvas.toDataURL('image/png');
+            link.download = `ISM_${activeTab}_Result.png`;
             link.click();
-            document.body.removeChild(link);
-        };
+        } catch (error) {
+            console.error("Export failed:", error);
+            alert("Failed to generate image.");
+        }
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handleExportExcel = () => {
+    let excelContent = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+    excelContent += '<head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets>';
+    
+    const sheets = [
+        { name: 'Level Partitioning', id: 'sheet1', content: generateAnalysisTableHTML() },
+        { name: 'Final Matrix', id: 'sheet2', content: generateMatrixHTML(result.finalReachabilityMatrix, result.initialReachabilityMatrix, true) },
+        { name: 'Initial Matrix', id: 'sheet3', content: generateMatrixHTML(result.initialReachabilityMatrix, null, false) }
+    ];
+
+    sheets.forEach(sheet => {
+        excelContent += `<x:ExcelWorksheet><x:Name>${sheet.name}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet>`;
+    });
+
+    excelContent += '</x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>';
+
+    sheets.forEach(sheet => {
+        excelContent += sheet.content;
+    });
+
+    excelContent += '</body></html>';
+
+    const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `ISM_Analysis_Results_${new Date().toISOString().split('T')[0]}.xls`;
+    link.click();
+  };
+
+  // Helper to generate HTML Table for Analysis
+  const generateAnalysisTableHTML = () => {
+      let html = '<table><thead><tr><th>Factor</th><th>Reachability Set</th><th>Antecedent Set</th><th>Intersection</th><th>Level</th></tr></thead><tbody>';
+      
+      const { finalReachabilityMatrix, levels } = result;
+      const size = factors.length;
+      const levelMap = new Map<number, number>();
+      levels.forEach(l => l.elements.forEach(idx => levelMap.set(idx, l.level)));
+
+      factors.forEach((factor, i) => {
+        const reachabilitySet = [];
+        const antecedentSet = [];
+        for (let j = 0; j < size; j++) {
+            if (finalReachabilityMatrix[i][j] === 1) reachabilitySet.push(factors[j].name);
+            if (finalReachabilityMatrix[j][i] === 1) antecedentSet.push(factors[j].name);
+        }
+        const intersection = reachabilitySet.filter(x => antecedentSet.includes(x));
+        
+        html += `<tr><td>${factor.name}</td><td>${reachabilitySet.join(', ')}</td><td>${antecedentSet.join(', ')}</td><td>${intersection.join(', ')}</td><td>${levelMap.get(i)}</td></tr>`;
+      });
+      html += '</tbody></table><br/>';
+      return html;
+  };
+
+  // Helper to generate HTML Table for Matrices
+  const generateMatrixHTML = (matrix: number[][], irm: number[][] | null, isFinal: boolean) => {
+      let html = '<table>';
+      if(isFinal) {
+          html += '<tr><td colspan="5" style="font-weight:bold">Key:</td></tr>';
+          html += '<tr><td colspan="5">1: Direct Relationship</td></tr>';
+          html += '<tr><td colspan="5">1*: Transitive Relationship</td></tr>';
+          html += '<tr><td colspan="5">0: No Relationship</td></tr>';
+          html += '<tr><td colspan="5"></td></tr>';
+      }
+      html += '<thead><tr><th>i \\ j</th>';
+      factors.forEach(f => html += `<th>${f.name}: ${f.description || ''}</th>`);
+      if(isFinal) html += '<th>Driving Power</th>';
+      html += '</tr></thead><tbody>';
+      const size = matrix.length;
+      const drivingPowers = matrix.map(row => row.reduce((sum, val) => sum + val, 0));
+      const dependencePowers = Array.from({ length: size }, (_, colIndex) => matrix.reduce((sum, row) => sum + row[colIndex], 0));
+      matrix.forEach((row, i) => {
+          html += `<tr><td>${factors[i].name}: ${factors[i].description || ''}</td>`;
+          row.forEach((val, j) => {
+              let displayVal = val.toString();
+              if (isFinal && irm && val === 1) {
+                   const isDirect = irm[i][j] === 1;
+                   const isSelf = i === j;
+                   if (!isDirect && !isSelf) displayVal = "1*";
+              }
+              html += `<td>${displayVal}</td>`;
+          });
+          if(isFinal) html += `<td>${drivingPowers[i]}</td>`;
+          html += '</tr>';
+      });
+      if(isFinal) {
+          html += '<tr><td>Dependence Power</td>';
+          dependencePowers.forEach(val => html += `<td>${val}</td>`);
+          html += '<td></td></tr>';
+      }
+      html += '</tbody></table><br/>';
+      return html;
   };
 
   const renderSimpleMatrix = (matrix: number[][]) => (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr>
-            <th className="p-2 border border-slate-200 bg-slate-50 text-slate-500">#</th>
-            {factors.map((f, i) => (
-              <th key={i} className="p-2 border border-slate-200 bg-slate-50 text-slate-700 w-10 text-center text-xs font-mono">{f.name}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {matrix.map((row, i) => (
-            <tr key={i} className="hover:bg-slate-50">
-               <td className="p-2 border border-slate-200 bg-slate-50 text-slate-700 font-bold text-center text-xs font-mono whitespace-nowrap">{factors[i].name}</td>
-               {row.map((val, j) => (
-                 <td key={j} className={`p-2 border border-slate-200 text-center ${val === 1 ? 'text-emerald-700 bg-emerald-50 font-bold' : 'text-slate-400'}`}>
-                   {val}
-                 </td>
-               ))}
+    <div className="space-y-4">
+      <div className="flex gap-4 text-xs bg-slate-50 p-3 rounded border border-slate-200">
+          <span className="font-bold text-slate-700">Key:</span>
+          <div className="flex items-center gap-1.5"><span className="w-4 h-4 flex items-center justify-center bg-blue-100 text-blue-900 font-bold border border-blue-200 rounded text-[10px]">1</span> Relationship</div>
+          <div className="flex items-center gap-1.5"><span className="w-4 h-4 flex items-center justify-center bg-white text-slate-300 border border-slate-200 rounded text-[10px]">0</span> No Relation</div>
+      </div>
+      <div className="overflow-x-auto pb-4">
+        <table className="w-full border-collapse text-sm border border-slate-300 table-fixed">
+          <thead>
+            <tr>
+              <th className="p-2 border border-slate-300 bg-slate-800 text-white font-mono text-xs w-[250px]">i \ j</th>
+              {factors.map((f, i) => (
+                <th key={i} className="p-2 border border-slate-300 bg-slate-100 text-slate-800 w-12 text-center text-xs font-bold align-bottom h-40">
+                  <div className="transform -rotate-90 origin-bottom-left w-6 whitespace-nowrap overflow-visible translate-x-3 mb-2 text-left">
+                    <span className="mr-2 text-slate-900 font-extrabold">{f.name}:</span>
+                    <span className="font-normal text-slate-600">{f.description}</span>
+                  </div>
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {matrix.map((row, i) => (
+              <tr key={i} className="hover:bg-slate-50">
+                <td className="p-2 border border-slate-300 bg-slate-100 text-slate-800 font-bold text-left text-xs whitespace-normal leading-tight" title={factors[i].description}>
+                  <span className="mr-1">{factors[i].name}:</span>
+                  <span className="font-normal text-slate-600">{factors[i].description}</span>
+                </td>
+                {row.map((val, j) => (
+                  <td key={j} className={`p-2 border border-slate-300 text-center ${val === 1 ? 'text-blue-900 bg-blue-50 font-bold' : 'text-slate-300'}`}>
+                    {val}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 
@@ -102,74 +242,66 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
     );
 
     return (
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr>
-              <th className="p-2 border border-slate-200 bg-slate-50 text-slate-500 font-mono text-xs">i \ j</th>
-              {factors.map((f, i) => (
-                <th key={i} className="p-2 border border-slate-200 bg-slate-50 text-slate-700 w-10 text-center font-mono text-xs" title={f.name}>{f.name}</th>
-              ))}
-              <th className="p-2 border border-slate-200 bg-emerald-50 text-emerald-800 font-bold whitespace-nowrap text-center">Driving Power</th>
-            </tr>
-          </thead>
-          <tbody>
-            {frm.map((row, i) => (
-              <tr key={i} className="hover:bg-slate-50">
-                 <td className="p-2 border border-slate-200 bg-slate-50 text-slate-700 font-bold text-center whitespace-nowrap" title={factors[i].name}>
-                    <div className="flex items-center gap-2">
-                        <span className="w-8 text-right font-mono text-xs">{factors[i].name}</span>
-                        <span className="font-normal text-xs text-slate-500 truncate max-w-[120px] hidden lg:block text-left">{factors[i].description}</span>
-                    </div>
-                 </td>
-                 {row.map((val, j) => {
-                   const isDirect = irm[i][j] === 1;
-                   const isSelf = i === j;
-                   
-                   let displayVal: React.ReactNode = val;
-                   let cellClass = "text-slate-300";
-                   
-                   if (val === 1) {
-                       if (isDirect || isSelf) {
-                           displayVal = "1";
-                           cellClass = "text-emerald-900 font-bold bg-emerald-50";
-                       } else {
-                           displayVal = "1*"; // Transitive
-                           cellClass = "text-amber-600 font-bold bg-amber-50";
-                       }
-                   } else {
-                       displayVal = "0";
-                   }
+      <div className="space-y-4">
+        {/* Key / Legend */}
+        <div className="flex gap-4 text-xs bg-slate-50 p-3 rounded border border-slate-200">
+            <span className="font-bold text-slate-700">Key:</span>
+            <div className="flex items-center gap-1.5"><span className="w-4 h-4 flex items-center justify-center bg-blue-100 text-blue-900 font-bold border border-blue-200 rounded text-[10px]">1</span> Direct</div>
+            <div className="flex items-center gap-1.5"><span className="w-4 h-4 flex items-center justify-center bg-amber-100 text-amber-900 font-bold border border-amber-200 rounded text-[10px]">1*</span> Transitive</div>
+            <div className="flex items-center gap-1.5"><span className="w-4 h-4 flex items-center justify-center bg-white text-slate-300 border border-slate-200 rounded text-[10px]">0</span> No Relation</div>
+        </div>
 
-                   return (
-                     <td key={j} className={`p-2 border border-slate-200 text-center ${cellClass}`}>
-                       {displayVal}
-                     </td>
-                   );
-                 })}
-                 <td className="p-2 border border-slate-200 bg-emerald-50 text-emerald-800 font-bold text-center">
-                    {drivingPowers[i]}
-                 </td>
-              </tr>
-            ))}
-            <tr className="bg-orange-50 font-bold border-t-2 border-orange-200">
-                <td className="p-2 border border-slate-200 text-orange-800 font-bold text-center whitespace-nowrap">Dependence Power</td>
-                {dependencePowers.map((val, j) => (
-                    <td key={j} className="p-2 border border-slate-200 text-orange-700 text-center">
-                        {val}
-                    </td>
+        <div className="overflow-x-auto pb-4">
+          <table className="w-full border-collapse text-sm border border-slate-300 table-fixed">
+            <thead>
+              <tr>
+                <th className="p-2 border border-slate-300 bg-slate-800 text-white font-mono text-xs w-[250px]">i \ j</th>
+                {factors.map((f, i) => (
+                  <th key={i} className="p-2 border border-slate-300 bg-slate-100 text-slate-800 w-12 text-center text-xs font-bold align-bottom h-40">
+                     <div className="transform -rotate-90 origin-bottom-left w-6 whitespace-nowrap overflow-visible translate-x-3 mb-2 text-left">
+                        <span className="mr-2 text-slate-900 font-extrabold">{f.name}:</span>
+                        <span className="font-normal text-slate-600">{f.description}</span>
+                     </div>
+                  </th>
                 ))}
-                <td className="p-2 border border-slate-200 bg-slate-100"></td>
-            </tr>
-          </tbody>
-        </table>
-        <div className="mt-3 text-xs text-slate-500 flex gap-4">
-            <div className="flex items-center gap-2">
-                <span className="font-bold text-emerald-800 bg-emerald-50 px-1 rounded">1</span>: Direct Relationship
-            </div>
-            <div className="flex items-center gap-2">
-                <span className="font-bold text-amber-600 bg-amber-50 px-1 rounded">1*</span>: Transitive Relationship (Inferred)
-            </div>
+                <th className="p-2 border border-slate-300 bg-indigo-100 text-indigo-900 font-bold whitespace-nowrap text-center text-xs uppercase tracking-wider w-16 align-bottom">
+                    <div className="transform -rotate-90 origin-bottom-left w-6 whitespace-nowrap overflow-visible translate-x-8 mb-2">Driving Power</div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {frm.map((row, i) => (
+                <tr key={i} className="hover:bg-slate-50">
+                   <td className="p-2 border border-slate-300 bg-slate-100 text-slate-800 font-bold text-left whitespace-normal text-xs leading-tight" title={factors[i].description}>
+                        <span className="mr-1">{factors[i].name}:</span>
+                        <span className="font-normal text-slate-600">{factors[i].description}</span>
+                   </td>
+                   {row.map((val, j) => {
+                     const isDirect = irm[i][j] === 1;
+                     const isSelf = i === j;
+                     let displayVal: React.ReactNode = val;
+                     let cellClass = "text-slate-300";
+                     if (val === 1) {
+                         if (isDirect || isSelf) {
+                             displayVal = "1";
+                             cellClass = "text-blue-900 font-bold bg-blue-50";
+                         } else {
+                             displayVal = "1*";
+                             cellClass = "text-amber-700 font-bold bg-amber-50";
+                         }
+                     } else displayVal = "0";
+                     return <td key={j} className={`p-2 border border-slate-300 text-center ${cellClass}`}>{displayVal}</td>;
+                   })}
+                   <td className="p-2 border border-slate-300 bg-indigo-50 text-indigo-800 font-bold text-center">{drivingPowers[i]}</td>
+                </tr>
+              ))}
+              <tr className="font-bold">
+                  <td className="p-2 border border-slate-300 bg-teal-100 text-teal-900 font-bold text-center whitespace-nowrap text-xs uppercase tracking-wider">Dependence Power</td>
+                  {dependencePowers.map((val, j) => <td key={j} className="p-2 border border-slate-300 bg-teal-50 text-teal-800 text-center">{val}</td>)}
+                  <td className="p-2 border border-slate-300 bg-slate-200"></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     );
@@ -177,44 +309,40 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 no-print">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 no-print border-b border-slate-200 pb-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">ISM Model Analysis</h2>
-          <p className="text-slate-500">Visual hierarchy, partitioning analysis, and matrix computations.</p>
+          <h2 className="text-xl font-bold text-slate-800">Model Results</h2>
+          <p className="text-slate-500 text-sm">Structural analysis and visualizations.</p>
         </div>
-        <div className="flex flex-wrap gap-2 w-full xl:w-auto">
-           <button 
-             onClick={handlePrint}
-             className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200 transition-colors text-sm font-medium"
-           >
-              <Printer className="w-4 h-4" /> Print PDF
+        <div className="flex flex-wrap gap-3 w-full xl:w-auto">
+           <button onClick={() => window.print()} className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50 text-xs font-bold shadow-sm">
+              <Printer className="w-4 h-4" /> PDF Report
            </button>
-           {(activeTab === 'hierarchy' || activeTab === 'digraph') && (
-               <button 
-                 onClick={handleDownloadPNG}
-                 className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200 transition-colors text-sm font-medium"
-               >
-                  <Download className="w-4 h-4" /> Export Graph
-               </button>
+           
+           {(activeTab === 'analysis' || activeTab === 'frm' || activeTab === 'irm') && (
+             <button onClick={handleExportExcel} className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50 text-xs font-bold shadow-sm animate-in fade-in">
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> Export Excel
+             </button>
            )}
-           <div className="w-px h-8 bg-slate-300 mx-2 hidden md:block"></div>
-           <div className="flex flex-wrap gap-1 bg-white border border-slate-200 p-1 rounded-lg shadow-sm">
+
+           <button onClick={handleDownloadPNG} className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50 text-xs font-bold shadow-sm">
+              <Download className="w-4 h-4" /> Export Image
+           </button>
+
+           <div className="w-px h-8 bg-slate-300 mx-1 hidden md:block"></div>
+           <div className="flex bg-slate-100 p-1 rounded-md">
             {[
                 { id: 'hierarchy', label: 'Hierarchy' },
                 { id: 'digraph', label: 'Digraph' },
                 { id: 'micmac', label: 'MICMAC' },
                 { id: 'analysis', label: 'Sets' },
-                { id: 'frm', label: 'Final Matrix' },
-                { id: 'irm', label: 'Initial Matrix' },
+                { id: 'frm', label: 'Final' },
+                { id: 'irm', label: 'Initial' },
             ].map(tab => (
                 <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${
-                    activeTab === tab.id 
-                    ? 'bg-emerald-600 text-white shadow' 
-                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
-                }`}
+                className={`px-3 py-1.5 rounded text-xs font-bold transition-all ${activeTab === tab.id ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-900'}`}
                 >
                 {tab.label}
                 </button>
@@ -223,62 +351,51 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-1 border border-slate-200 shadow-xl min-h-[500px] print-content">
+      <div ref={exportRef} className="bg-white rounded-lg border border-slate-200 shadow-sm min-h-[600px] print-content">
         {activeTab === 'hierarchy' && (
-          <div className="p-4 h-full">
-            <HierarchyGraph result={result} factors={factors} />
-          </div>
+             <div className="p-4 h-full">
+                <HierarchyGraph result={result} factors={factors} />
+             </div>
         )}
-
         {activeTab === 'digraph' && (
-          <div className="p-4 h-full">
-            <InterrelationshipGraph result={result} factors={factors} />
-          </div>
+             <div className="p-4 h-full">
+                <InterrelationshipGraph result={result} factors={factors} />
+             </div>
         )}
-
         {activeTab === 'micmac' && (
-           <div className="p-6">
-             <h3 className="text-lg font-semibold text-slate-900 mb-4">MICMAC Analysis</h3>
-             <p className="text-sm text-slate-500 mb-4">Classification of factors based on driving power and dependence power.</p>
-             <MicmacAnalysis result={result} factors={factors} />
-           </div>
+            <div className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-slate-900">Results of MICMAC analysis of factors / barriers</h3>
+                </div>
+                <MicmacAnalysis result={result} factors={factors} />
+            </div>
         )}
-
         {activeTab === 'analysis' && (
-           <div className="p-6">
-             <h3 className="text-lg font-semibold text-slate-900 mb-4">Level Partitioning & Set Analysis</h3>
-             <AnalysisTable factors={factors} result={result} />
-           </div>
+            <div className="p-6">
+                <h3 className="font-bold text-slate-900 mb-4">Results of level partitions</h3>
+                <AnalysisTable factors={factors} result={result} />
+            </div>
         )}
-
         {activeTab === 'irm' && (
-           <div className="p-6">
-             <h3 className="text-lg font-semibold text-slate-900 mb-4">Initial Reachability Matrix (IRM)</h3>
-             {renderSimpleMatrix(result.initialReachabilityMatrix)}
-           </div>
+            <div className="p-6">
+                <h3 className="font-bold text-slate-900 mb-4">Initial reachability matrix</h3>
+                {renderSimpleMatrix(result.initialReachabilityMatrix)}
+            </div>
         )}
-
         {activeTab === 'frm' && (
-           <div className="p-6">
-             <h3 className="text-lg font-semibold text-slate-900 mb-4">Final Reachability Matrix (Transitive)</h3>
-             <p className="text-sm text-slate-500 mb-4">Includes implied links derived from transitivity (if A&rarr;B and B&rarr;C, then A&rarr;C).</p>
-             {renderFRMWithPowers(result.finalReachabilityMatrix, result.initialReachabilityMatrix)}
-           </div>
+            <div className="p-6">
+                <h3 className="font-bold text-slate-900 mb-4">Final reachability matrix</h3>
+                {renderFRMWithPowers(result.finalReachabilityMatrix, result.initialReachabilityMatrix)}
+            </div>
         )}
       </div>
 
-      <div className="flex justify-between pt-4 no-print">
-        <button
-          onClick={onBack}
-          className="px-6 py-3 text-slate-500 hover:text-slate-900 transition-colors"
-        >
-          Modify SSIM
+      <div className="flex justify-between pt-6 no-print">
+        <button onClick={onBack} className="px-5 py-2.5 border border-slate-300 bg-white text-slate-600 rounded-md hover:bg-slate-50 text-sm font-medium flex items-center gap-2">
+           <ArrowLeft className="w-4 h-4" /> Modify Inputs
         </button>
-        <button
-          onClick={onReset}
-          className="px-6 py-3 border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
-        >
-          Start New Project
+        <button onClick={onReset} className="px-5 py-2.5 bg-red-50 text-red-700 border border-red-200 rounded-md hover:bg-red-100 text-sm font-medium flex items-center gap-2">
+           <RefreshCw className="w-4 h-4" /> New Project
         </button>
       </div>
     </div>
