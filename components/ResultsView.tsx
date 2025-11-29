@@ -263,7 +263,7 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                      {f.name}
                   </th>
                 ))}
-                <th className="p-2 border border-slate-300 bg-indigo-100 text-indigo-900 font-bold whitespace-nowrap text-center text-xs uppercase tracking-wider w-25">
+                <th className="p-2 border border-slate-300 bg-indigo-100 text-indigo-900 font-bold whitespace-nowrap text-center text-wrap text-xs uppercase tracking-wider w-16">
                     Driving Power
                 </th>
               </tr>
