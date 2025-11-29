@@ -4,7 +4,7 @@ import FactorInput from './components/FactorInput';
 import SSIMGrid from './components/SSIMGrid';
 import ResultsView from './components/ResultsView';
 import { runISMAnalysis } from './services/ismLogic';
-import { HardHat, Wand2 } from 'lucide-react';
+import { HardHat } from 'lucide-react';
 
 // Fixed 11 factors based on the Sustainability Barriers input
 const FIXED_FACTORS: ISMElement[] = [
@@ -55,28 +55,28 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-stone-50 text-slate-900 selection:bg-emerald-500/30">
       {/* Header */}
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-emerald-100 bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-600 rounded-lg shadow-sm">
+            <div className="p-2 bg-emerald-600 rounded-lg shadow-md shadow-emerald-200">
               <HardHat className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent hidden md:block whitespace-nowrap">
+            <h1 className="text-xl font-bold text-emerald-800 hidden md:block whitespace-nowrap">
               SSIM Construction (TEST)
             </h1>
-            <span className="text-slate-400 hidden md:block">|</span>
-            <p className="text-xs md:text-sm lg:text-base font-semibold text-slate-700 truncate max-w-[200px] md:max-w-none">
+            <span className="text-emerald-200 hidden md:block">|</span>
+            <p className="text-xs md:text-sm lg:text-base font-semibold text-emerald-900 truncate max-w-[200px] md:max-w-none">
                 Confined Space Accidents Critical Factors Network Mapping
             </p>
           </div>
           <div className="hidden md:flex items-center gap-4 text-sm font-medium text-slate-400">
-            <span className={step === AppStep.DEFINE_FACTORS ? 'text-indigo-600 font-bold' : ''}>1. Factors</span>
+            <span className={step === AppStep.DEFINE_FACTORS ? 'text-emerald-700 font-bold' : ''}>1. Factors</span>
             <span>&rarr;</span>
-            <span className={step === AppStep.FILL_SSIM ? 'text-indigo-600 font-bold' : ''}>2. Relations</span>
+            <span className={step === AppStep.FILL_SSIM ? 'text-emerald-700 font-bold' : ''}>2. Relations</span>
             <span>&rarr;</span>
-            <span className={step === AppStep.ANALYSIS_RESULT ? 'text-indigo-600 font-bold' : ''}>3. Model</span>
+            <span className={step === AppStep.ANALYSIS_RESULT ? 'text-emerald-700 font-bold' : ''}>3. Model</span>
           </div>
         </div>
       </header>
@@ -86,9 +86,9 @@ const App: React.FC = () => {
         
         {step === AppStep.DEFINE_FACTORS && (
           <div className="space-y-6 animate-in zoom-in-95 duration-500">
-             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
-                <h2 className="text-lg font-semibold text-slate-900 mb-2">Project Scope</h2>
-                <p className="text-slate-600 italic">"{topic}"</p>
+             <div className="bg-white p-6 rounded-xl border-l-4 border-l-emerald-500 border-y border-r border-slate-200 shadow-sm mb-8">
+                <h2 className="text-lg font-semibold text-emerald-900 mb-2">Project Scope</h2>
+                <p className="text-slate-700 italic">"{topic}"</p>
              </div>
 
              <FactorInput 

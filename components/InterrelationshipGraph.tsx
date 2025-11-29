@@ -59,6 +59,20 @@ const InterrelationshipGraph: React.FC<Props> = ({ result, factors }) => {
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", "#8b5cf6");
 
+    // Category Color Mapping
+    const getCategoryColor = (cat?: string) => {
+        switch (cat) {
+            case 'Management': return '#3b82f6';
+            case 'Cost': return '#e11d48'; 
+            case 'Organization': return '#9333ea';
+            case 'Technology': return '#0891b2';
+            case 'Knowledge': return '#d97706';
+            case 'Process': return '#ea580c';
+            case 'Policy': return '#475569';
+            default: return '#10b981';
+        }
+    };
+
     // Create Nodes in a Circle
     const nodes = factors.map((f, i) => {
         const angle = (i / factors.length) * 2 * Math.PI - Math.PI / 2; // Start from top
@@ -115,8 +129,8 @@ const InterrelationshipGraph: React.FC<Props> = ({ result, factors }) => {
     nodeGroups.append("circle")
         .attr("r", nodeRadius)
         .attr("fill", "white")
-        .attr("stroke", "#334155")
-        .attr("stroke-width", 2)
+        .attr("stroke", (d: any) => getCategoryColor(d.data.category))
+        .attr("stroke-width", 3)
         .attr("cursor", "pointer")
         .on("mouseover", function() { d3.select(this).attr("fill", "#f1f5f9"); })
         .on("mouseout", function() { d3.select(this).attr("fill", "white"); });
@@ -136,7 +150,7 @@ const InterrelationshipGraph: React.FC<Props> = ({ result, factors }) => {
     <div ref={containerRef} className="w-full bg-white rounded-xl border border-slate-200 shadow-inner overflow-hidden">
         <svg id="interrelationship-graph-svg" ref={svgRef} className="block mx-auto"></svg>
         <div className="p-4 text-center text-sm text-slate-500">
-            Interrelationships between factors (Digraph).
+            Interrelationships between factors (Digraph). Nodes colored by category.
             <div className="flex justify-center gap-6 mt-2 text-xs font-medium">
                 <span className="flex items-center gap-2">
                     <span className="w-6 h-0.5 bg-slate-400"></span> 

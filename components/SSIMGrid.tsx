@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { ISMElement, SSIMData, SSIMValue } from '../types';
 import { RotateCcw, Wand2, Save, Upload } from 'lucide-react';
+import { getCategoryColorClasses } from './FactorInput';
 
 interface Props {
   factors: ISMElement[];
@@ -97,12 +98,26 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
 
   const getCellColor = (val: SSIMValue) => {
     switch(val) {
-      case SSIMValue.V: return 'bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200';
-      case SSIMValue.A: return 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200';
-      case SSIMValue.X: return 'bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-200';
+      case SSIMValue.V: return 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200';
+      case SSIMValue.A: return 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200';
+      case SSIMValue.X: return 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200';
       case SSIMValue.O: return 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100';
       default: return 'bg-slate-50 text-slate-400 border-slate-200';
     }
+  };
+
+  // Extract just the bg color part for row indicators
+  const getCategoryBorderColor = (cat?: string) => {
+     switch (cat) {
+        case 'Management': return 'border-l-blue-400';
+        case 'Cost': return 'border-l-rose-400';
+        case 'Organization': return 'border-l-purple-400';
+        case 'Technology': return 'border-l-cyan-400';
+        case 'Knowledge': return 'border-l-amber-400';
+        case 'Process': return 'border-l-orange-400';
+        case 'Policy': return 'border-l-slate-400';
+        default: return 'border-l-emerald-400';
+     }
   };
 
   return (
@@ -118,9 +133,9 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
           </p>
         </div>
         <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm bg-white p-2 rounded-lg border border-slate-200 shadow-sm text-slate-700">
-          <div className="flex items-center gap-2 px-2 py-1 rounded bg-slate-50" title="i influences j"><span className="w-2 h-2 md:w-3 md:h-3 bg-emerald-500 rounded-full"></span> <span className="font-mono font-bold text-emerald-600">V</span>: i &rarr; j</div>
-          <div className="flex items-center gap-2 px-2 py-1 rounded bg-slate-50" title="j influences i"><span className="w-2 h-2 md:w-3 md:h-3 bg-amber-500 rounded-full"></span> <span className="font-mono font-bold text-amber-600">A</span>: j &rarr; i</div>
-          <div className="flex items-center gap-2 px-2 py-1 rounded bg-slate-50" title="Mutual influence"><span className="w-2 h-2 md:w-3 md:h-3 bg-purple-500 rounded-full"></span> <span className="font-mono font-bold text-purple-600">X</span>: i &harr; j</div>
+          <div className="flex items-center gap-2 px-2 py-1 rounded bg-emerald-50 border border-emerald-100" title="i influences j"><span className="w-2 h-2 md:w-3 md:h-3 bg-emerald-500 rounded-full"></span> <span className="font-mono font-bold text-emerald-700">V</span>: i &rarr; j</div>
+          <div className="flex items-center gap-2 px-2 py-1 rounded bg-amber-50 border border-amber-100" title="j influences i"><span className="w-2 h-2 md:w-3 md:h-3 bg-amber-500 rounded-full"></span> <span className="font-mono font-bold text-amber-700">A</span>: j &rarr; i</div>
+          <div className="flex items-center gap-2 px-2 py-1 rounded bg-blue-50 border border-blue-100" title="Mutual influence"><span className="w-2 h-2 md:w-3 md:h-3 bg-blue-500 rounded-full"></span> <span className="font-mono font-bold text-blue-700">X</span>: i &harr; j</div>
           <div className="flex items-center gap-2 px-2 py-1 rounded bg-slate-50" title="No relationship"><span className="w-2 h-2 md:w-3 md:h-3 bg-slate-300 rounded-full"></span> <span className="font-mono font-bold text-slate-400">O</span>: None</div>
         </div>
       </div>
@@ -136,7 +151,9 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
                 <th key={f.id} className="sticky top-0 z-20 bg-white p-2 text-slate-700 font-mono text-xs w-10 md:w-14 text-center border-b border-slate-200 shadow-sm group relative cursor-help">
                   {f.name}
                   <div className="absolute hidden group-hover:block top-full left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs p-2 rounded shadow-xl whitespace-nowrap z-40 border border-slate-600 pointer-events-none">
-                    <span className="font-bold">{f.name}:</span> {f.description || f.name}
+                    <span className="font-bold text-emerald-300">{f.name}:</span> {f.description || f.name}
+                    <br/>
+                    <span className="text-slate-400 text-[10px]">{f.category}</span>
                   </div>
                 </th>
               ))}
@@ -145,7 +162,7 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
           <tbody>
             {factors.map((rowFactor, i) => (
               <tr key={rowFactor.id} className="hover:bg-slate-50 transition-colors">
-                <td className="sticky left-0 z-20 bg-white p-2 text-slate-700 text-xs md:text-sm font-medium border-r border-slate-200 min-w-[200px] max-w-[300px] truncate shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] cursor-help" title={rowFactor.description || rowFactor.name}>
+                <td className={`sticky left-0 z-20 bg-white p-2 text-slate-700 text-xs md:text-sm font-medium border-r border-slate-200 border-l-4 ${getCategoryBorderColor(rowFactor.category)} min-w-[200px] max-w-[300px] truncate shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] cursor-help`} title={rowFactor.description || rowFactor.name}>
                   <div className="flex items-center gap-2">
                     <span className="inline-block w-8 text-slate-400 font-mono text-right">{rowFactor.name}.</span>
                     <span className="truncate">{rowFactor.description || rowFactor.name}</span>
@@ -176,12 +193,12 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
                   const isHighlighted = highlightCell?.i === rowFactor.id && highlightCell?.j === colFactor.id;
 
                   return (
-                    <td key={colFactor.id} className={`p-0.5 md:p-1 text-center border border-slate-100 relative transition-colors duration-500 ${isHighlighted ? 'bg-indigo-50' : ''}`}>
+                    <td key={colFactor.id} className={`p-0.5 md:p-1 text-center border border-slate-100 relative transition-colors duration-500 ${isHighlighted ? 'bg-yellow-50' : ''}`}>
                       <div className="relative group/cell">
                         <button
                           type="button"
                           onClick={() => toggleValue(rowFactor.id, colFactor.id)}
-                          className={`w-8 h-8 md:w-10 md:h-10 rounded-sm md:rounded-md border font-bold text-xs md:text-sm transition-all flex items-center justify-center ${getCellColor(val)} ${isHighlighted ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-white scale-110' : ''}`}
+                          className={`w-8 h-8 md:w-10 md:h-10 rounded-sm md:rounded-md border font-bold text-xs md:text-sm transition-all flex items-center justify-center ${getCellColor(val)} ${isHighlighted ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-white scale-110' : ''}`}
                         >
                           {val}
                         </button>
@@ -226,14 +243,14 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
             <button
               type="button"
               onClick={handleExportData}
-              className="px-3 py-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg flex items-center gap-2 text-sm transition-colors"
+              className="px-3 py-2 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg flex items-center gap-2 text-sm transition-colors"
             >
               <Save className="w-4 h-4" /> Save Data
             </button>
             <button
               type="button"
               onClick={triggerImport}
-              className="px-3 py-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg flex items-center gap-2 text-sm transition-colors"
+              className="px-3 py-2 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg flex items-center gap-2 text-sm transition-colors"
             >
               <Upload className="w-4 h-4" /> Load Data
             </button>
@@ -242,7 +259,7 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
         <button
           type="button"
           onClick={onNext}
-          className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold rounded-lg shadow-lg shadow-emerald-500/20 transition-all transform hover:scale-[1.02] flex items-center gap-2 ml-auto"
+          className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-lg shadow-emerald-500/20 transition-all transform hover:scale-[1.02] flex items-center gap-2 ml-auto"
         >
           Generate Model <Wand2 className="w-4 h-4" />
         </button>

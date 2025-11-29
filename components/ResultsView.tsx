@@ -76,7 +76,7 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
             <tr key={i} className="hover:bg-slate-50">
                <td className="p-2 border border-slate-200 bg-slate-50 text-slate-700 font-bold text-center text-xs font-mono whitespace-nowrap">{factors[i].name}</td>
                {row.map((val, j) => (
-                 <td key={j} className={`p-2 border border-slate-200 text-center ${val === 1 ? 'text-emerald-600 bg-emerald-50 font-bold' : 'text-slate-400'}`}>
+                 <td key={j} className={`p-2 border border-slate-200 text-center ${val === 1 ? 'text-emerald-700 bg-emerald-50 font-bold' : 'text-slate-400'}`}>
                    {val}
                  </td>
                ))}
@@ -103,7 +103,7 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
               {factors.map((f, i) => (
                 <th key={i} className="p-2 border border-slate-200 bg-slate-50 text-slate-700 w-10 text-center font-mono text-xs" title={f.name}>{f.name}</th>
               ))}
-              <th className="p-2 border border-slate-200 bg-indigo-50 text-indigo-700 font-bold whitespace-nowrap text-center">Driving Power</th>
+              <th className="p-2 border border-slate-200 bg-emerald-50 text-emerald-800 font-bold whitespace-nowrap text-center">Driving Power</th>
             </tr>
           </thead>
           <tbody>
@@ -125,10 +125,10 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                    if (val === 1) {
                        if (isDirect || isSelf) {
                            displayVal = "1";
-                           cellClass = "text-slate-900 font-bold";
+                           cellClass = "text-emerald-900 font-bold bg-emerald-50";
                        } else {
                            displayVal = "1*"; // Transitive
-                           cellClass = "text-emerald-600 font-bold bg-emerald-50";
+                           cellClass = "text-amber-600 font-bold bg-amber-50";
                        }
                    } else {
                        displayVal = "0";
@@ -140,7 +140,7 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                      </td>
                    );
                  })}
-                 <td className="p-2 border border-slate-200 bg-indigo-50 text-indigo-700 font-bold text-center">
+                 <td className="p-2 border border-slate-200 bg-emerald-50 text-emerald-800 font-bold text-center">
                     {drivingPowers[i]}
                  </td>
               </tr>
@@ -158,10 +158,10 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
         </table>
         <div className="mt-3 text-xs text-slate-500 flex gap-4">
             <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900">1</span>: Direct Relationship
+                <span className="font-bold text-emerald-800 bg-emerald-50 px-1 rounded">1</span>: Direct Relationship
             </div>
             <div className="flex items-center gap-2">
-                <span className="font-bold text-emerald-600 bg-emerald-50 px-1 rounded">1*</span>: Transitive Relationship (Inferred)
+                <span className="font-bold text-amber-600 bg-amber-50 px-1 rounded">1*</span>: Transitive Relationship (Inferred)
             </div>
         </div>
       </div>
@@ -204,7 +204,7 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${
                     activeTab === tab.id 
-                    ? 'bg-indigo-600 text-white shadow' 
+                    ? 'bg-emerald-600 text-white shadow' 
                     : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
                 }`}
                 >

@@ -42,6 +42,20 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", "#94a3b8");
 
+    // Define color scale for categories
+    const getCategoryColor = (cat?: string) => {
+        switch (cat) {
+            case 'Management': return '#3b82f6'; // Blue
+            case 'Cost': return '#e11d48'; // Rose
+            case 'Organization': return '#9333ea'; // Purple
+            case 'Technology': return '#0891b2'; // Cyan
+            case 'Knowledge': return '#d97706'; // Amber
+            case 'Process': return '#ea580c'; // Orange
+            case 'Policy': return '#475569'; // Slate
+            default: return '#10b981'; // Emerald
+        }
+    };
+
     const nodes: any[] = [];
     
     // Position Levels
@@ -114,8 +128,8 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
     nodeGroups.append("circle")
         .attr("r", nodeRadius)
         .attr("fill", "#ffffff")
-        .attr("stroke", (d:any) => d.level === 1 ? "#10b981" : "#6366f1")
-        .attr("stroke-width", 3)
+        .attr("stroke", (d:any) => getCategoryColor(d.data.category))
+        .attr("stroke-width", 4)
         .attr("filter", "drop-shadow(0px 2px 4px rgba(0,0,0,0.1))");
 
     // Node ID Text (Using Name/Code like B02 instead of Index)
@@ -169,6 +183,23 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
   return (
     <div ref={containerRef} className="w-full bg-white rounded-xl border border-slate-200 shadow-inner overflow-x-auto overflow-y-hidden">
         <svg id="hierarchy-graph-svg" ref={svgRef} className="block min-w-[600px] mx-auto"></svg>
+        <div className="p-4 border-t border-slate-100 flex flex-wrap gap-4 justify-center text-xs">
+            {/* Legend */}
+            {[
+                { label: 'Management', color: '#3b82f6' },
+                { label: 'Cost', color: '#e11d48' },
+                { label: 'Organization', color: '#9333ea' },
+                { label: 'Technology', color: '#0891b2' },
+                { label: 'Knowledge', color: '#d97706' },
+                { label: 'Process', color: '#ea580c' },
+                { label: 'Policy', color: '#475569' },
+            ].map((item) => (
+                <div key={item.label} className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
+                    <span className="text-slate-600 font-medium">{item.label}</span>
+                </div>
+            ))}
+        </div>
     </div>
   );
 };
