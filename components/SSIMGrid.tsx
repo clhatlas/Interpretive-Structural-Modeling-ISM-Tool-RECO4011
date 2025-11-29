@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ISMElement, SSIMData, SSIMValue } from '../types';
-import { RotateCcw, Wand2 } from 'lucide-react';
+import { RotateCcw, Wand2, Save, Upload } from 'lucide-react';
 
 interface Props {
   factors: ISMElement[];
@@ -14,6 +14,7 @@ interface Props {
 const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) => {
   const [highlightCell, setHighlightCell] = useState<{i: string, j: string} | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleValue = (iId: string, jId: string) => {
     const current = ssim[iId]?.[jId] || SSIMValue.O;
@@ -49,6 +50,49 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
         // Auto-reset confirmation after 3 seconds
         setTimeout(() => setConfirmClear(false), 3000);
     }
+  };
+
+  const handleExportData = () => {
+    const dataStr = JSON.stringify(ssim, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `SSIM_Data_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const parsedData = JSON.parse(content);
+        // Basic validation: check if it's an object
+        if (typeof parsedData === 'object' && parsedData !== null) {
+            setSsim(parsedData);
+            alert("SSIM Data loaded successfully.");
+        } else {
+            alert("Invalid file format.");
+        }
+      } catch (error) {
+        console.error("Error parsing JSON:", error);
+        alert("Failed to parse file. Please ensure it is a valid JSON file exported from this app.");
+      }
+      // Reset input value to allow re-selecting the same file if needed
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsText(file);
+  };
+
+  const triggerImport = () => {
+    fileInputRef.current?.click();
   };
 
   const getCellColor = (val: SSIMValue) => {
@@ -151,8 +195,8 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
         </table>
       </div>
 
-      <div className="flex-shrink-0 flex justify-between items-center pt-2 pb-4">
-        <div className="flex gap-2">
+      <div className="flex-shrink-0 flex justify-between items-center pt-2 pb-4 flex-wrap gap-4">
+        <div className="flex gap-2 items-center flex-wrap">
             <button
             type="button"
             onClick={onBack}
@@ -163,18 +207,42 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
             <button
                 type="button"
                 onClick={handleClearClick}
-                className={`px-4 py-3 transition-colors flex items-center gap-2 text-sm ${confirmClear ? 'text-red-600 font-bold bg-red-50 rounded-lg' : 'text-slate-500 hover:text-red-500'}`}
+                className={`px-4 py-3 transition-colors flex items-center gap-2 text-sm rounded-lg border border-transparent ${confirmClear ? 'text-red-600 font-bold bg-red-50 border-red-100' : 'text-slate-500 hover:text-red-500 hover:bg-slate-50'}`}
                 title="Reset all relationships to 'O'"
             >
                 <RotateCcw className={`w-4 h-4 ${confirmClear ? 'animate-spin' : ''}`} /> 
-                {confirmClear ? "Confirm Clear?" : "Clear"}
+                {confirmClear ? "Confirm Clear?" : "Clear Grid"}
+            </button>
+            
+            <div className="w-px h-8 bg-slate-200 mx-2 hidden md:block"></div>
+
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleImportData} 
+              accept=".json" 
+              className="hidden" 
+            />
+            <button
+              type="button"
+              onClick={handleExportData}
+              className="px-3 py-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg flex items-center gap-2 text-sm transition-colors"
+            >
+              <Save className="w-4 h-4" /> Save Data
+            </button>
+            <button
+              type="button"
+              onClick={triggerImport}
+              className="px-3 py-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg flex items-center gap-2 text-sm transition-colors"
+            >
+              <Upload className="w-4 h-4" /> Load Data
             </button>
         </div>
         
         <button
           type="button"
           onClick={onNext}
-          className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold rounded-lg shadow-lg shadow-emerald-500/20 transition-all transform hover:scale-[1.02] flex items-center gap-2"
+          className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold rounded-lg shadow-lg shadow-emerald-500/20 transition-all transform hover:scale-[1.02] flex items-center gap-2 ml-auto"
         >
           Generate Model <Wand2 className="w-4 h-4" />
         </button>
