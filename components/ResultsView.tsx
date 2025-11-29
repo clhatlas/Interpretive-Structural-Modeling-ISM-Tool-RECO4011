@@ -3,6 +3,7 @@ import { ISMResult, ISMElement } from '../types';
 import HierarchyGraph from './HierarchyGraph';
 import InterrelationshipGraph from './InterrelationshipGraph';
 import AnalysisTable from './AnalysisTable';
+import MicmacAnalysis from './MicmacAnalysis';
 import { Download, Printer } from 'lucide-react';
 
 interface Props {
@@ -13,10 +14,16 @@ interface Props {
 }
 
 const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
-  const [activeTab, setActiveTab] = useState<'hierarchy' | 'digraph' | 'analysis' | 'irm' | 'frm'>('hierarchy');
+  const [activeTab, setActiveTab] = useState<'hierarchy' | 'digraph' | 'micmac' | 'analysis' | 'irm' | 'frm'>('hierarchy');
 
   const handleDownloadPNG = () => {
-    const svgId = activeTab === 'digraph' ? 'interrelationship-graph-svg' : 'hierarchy-graph-svg';
+    // Note: Added micmac logic to png export if needed, 
+    // but the generic ID selector needs to match the rendered component.
+    let svgId = '';
+    if (activeTab === 'digraph') svgId = 'interrelationship-graph-svg';
+    else if (activeTab === 'hierarchy') svgId = 'hierarchy-graph-svg';
+    else return; // Only support simple export for these two for now
+
     const svgElement = document.getElementById(svgId) as unknown as SVGSVGElement;
     if (!svgElement) return;
 
@@ -193,9 +200,10 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
            <div className="w-px h-8 bg-slate-300 mx-2 hidden md:block"></div>
            <div className="flex flex-wrap gap-1 bg-white border border-slate-200 p-1 rounded-lg shadow-sm">
             {[
-                { id: 'hierarchy', label: 'Hierarchy Model' },
-                { id: 'digraph', label: 'Interrelationships' },
-                { id: 'analysis', label: 'Analysis Table' },
+                { id: 'hierarchy', label: 'Hierarchy' },
+                { id: 'digraph', label: 'Digraph' },
+                { id: 'micmac', label: 'MICMAC' },
+                { id: 'analysis', label: 'Sets' },
                 { id: 'frm', label: 'Final Matrix' },
                 { id: 'irm', label: 'Initial Matrix' },
             ].map(tab => (
@@ -226,6 +234,14 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
           <div className="p-4 h-full">
             <InterrelationshipGraph result={result} factors={factors} />
           </div>
+        )}
+
+        {activeTab === 'micmac' && (
+           <div className="p-6">
+             <h3 className="text-lg font-semibold text-slate-900 mb-4">MICMAC Analysis</h3>
+             <p className="text-sm text-slate-500 mb-4">Classification of factors based on driving power and dependence power.</p>
+             <MicmacAnalysis result={result} factors={factors} />
+           </div>
         )}
 
         {activeTab === 'analysis' && (

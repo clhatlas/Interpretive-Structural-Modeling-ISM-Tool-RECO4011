@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { ISMResult, ISMElement } from '../types';
+import { getCategoryColorHex } from './FactorInput';
 
 interface Props {
   result: ISMResult;
@@ -41,20 +42,6 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", "#94a3b8");
-
-    // Define color scale for categories
-    const getCategoryColor = (cat?: string) => {
-        switch (cat) {
-            case 'Management': return '#3b82f6'; // Blue
-            case 'Cost': return '#e11d48'; // Rose
-            case 'Organization': return '#9333ea'; // Purple
-            case 'Technology': return '#0891b2'; // Cyan
-            case 'Knowledge': return '#d97706'; // Amber
-            case 'Process': return '#ea580c'; // Orange
-            case 'Policy': return '#475569'; // Slate
-            default: return '#10b981'; // Emerald
-        }
-    };
 
     const nodes: any[] = [];
     
@@ -128,7 +115,7 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
     nodeGroups.append("circle")
         .attr("r", nodeRadius)
         .attr("fill", "#ffffff")
-        .attr("stroke", (d:any) => getCategoryColor(d.data.category))
+        .attr("stroke", (d:any) => getCategoryColorHex(d.data.category))
         .attr("stroke-width", 4)
         .attr("filter", "drop-shadow(0px 2px 4px rgba(0,0,0,0.1))");
 
@@ -180,20 +167,17 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
 
   }, [result, factors]);
 
+  // Compute unique categories present in the data for legend
+  const legendData = React.useMemo(() => {
+     const cats = Array.from(new Set(factors.map(f => f.category).filter(Boolean))) as string[];
+     return cats.map(c => ({ label: c, color: getCategoryColorHex(c) }));
+  }, [factors]);
+
   return (
     <div ref={containerRef} className="w-full bg-white rounded-xl border border-slate-200 shadow-inner overflow-x-auto overflow-y-hidden">
         <svg id="hierarchy-graph-svg" ref={svgRef} className="block min-w-[600px] mx-auto"></svg>
         <div className="p-4 border-t border-slate-100 flex flex-wrap gap-4 justify-center text-xs">
-            {/* Legend */}
-            {[
-                { label: 'Management', color: '#3b82f6' },
-                { label: 'Cost', color: '#e11d48' },
-                { label: 'Organization', color: '#9333ea' },
-                { label: 'Technology', color: '#0891b2' },
-                { label: 'Knowledge', color: '#d97706' },
-                { label: 'Process', color: '#ea580c' },
-                { label: 'Policy', color: '#475569' },
-            ].map((item) => (
+            {legendData.map((item) => (
                 <div key={item.label} className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
                     <span className="text-slate-600 font-medium">{item.label}</span>

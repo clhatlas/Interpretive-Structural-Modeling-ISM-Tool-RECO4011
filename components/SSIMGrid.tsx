@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { ISMElement, SSIMData, SSIMValue } from '../types';
 import { RotateCcw, Wand2, Save, Upload } from 'lucide-react';
-import { getCategoryColorClasses } from './FactorInput';
+import { getCategoryTheme } from './FactorInput';
 
 interface Props {
   factors: ISMElement[];
@@ -106,20 +106,6 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
     }
   };
 
-  // Extract just the bg color part for row indicators
-  const getCategoryBorderColor = (cat?: string) => {
-     switch (cat) {
-        case 'Management': return 'border-l-blue-400';
-        case 'Cost': return 'border-l-rose-400';
-        case 'Organization': return 'border-l-purple-400';
-        case 'Technology': return 'border-l-cyan-400';
-        case 'Knowledge': return 'border-l-amber-400';
-        case 'Process': return 'border-l-orange-400';
-        case 'Policy': return 'border-l-slate-400';
-        default: return 'border-l-emerald-400';
-     }
-  };
-
   return (
     <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
       <div className="flex flex-shrink-0 justify-between items-center flex-wrap gap-4">
@@ -162,7 +148,7 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
           <tbody>
             {factors.map((rowFactor, i) => (
               <tr key={rowFactor.id} className="hover:bg-slate-50 transition-colors">
-                <td className={`sticky left-0 z-20 bg-white p-2 text-slate-700 text-xs md:text-sm font-medium border-r border-slate-200 border-l-4 ${getCategoryBorderColor(rowFactor.category)} min-w-[200px] max-w-[300px] truncate shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] cursor-help`} title={rowFactor.description || rowFactor.name}>
+                <td className={`sticky left-0 z-20 bg-white p-2 text-slate-700 text-xs md:text-sm font-medium border-r border-slate-200 border-l-4 ${getCategoryTheme(rowFactor.category).borderL} min-w-[200px] max-w-[300px] truncate shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] cursor-help`} title={rowFactor.description || rowFactor.name}>
                   <div className="flex items-center gap-2">
                     <span className="inline-block w-8 text-slate-400 font-mono text-right">{rowFactor.name}.</span>
                     <span className="truncate">{rowFactor.description || rowFactor.name}</span>

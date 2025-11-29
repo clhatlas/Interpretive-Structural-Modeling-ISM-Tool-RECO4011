@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { ISMResult, ISMElement } from '../types';
+import { getCategoryColorHex } from './FactorInput';
 
 interface Props {
   result: ISMResult;
@@ -59,20 +60,6 @@ const InterrelationshipGraph: React.FC<Props> = ({ result, factors }) => {
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", "#8b5cf6");
 
-    // Category Color Mapping
-    const getCategoryColor = (cat?: string) => {
-        switch (cat) {
-            case 'Management': return '#3b82f6';
-            case 'Cost': return '#e11d48'; 
-            case 'Organization': return '#9333ea';
-            case 'Technology': return '#0891b2';
-            case 'Knowledge': return '#d97706';
-            case 'Process': return '#ea580c';
-            case 'Policy': return '#475569';
-            default: return '#10b981';
-        }
-    };
-
     // Create Nodes in a Circle
     const nodes = factors.map((f, i) => {
         const angle = (i / factors.length) * 2 * Math.PI - Math.PI / 2; // Start from top
@@ -129,7 +116,7 @@ const InterrelationshipGraph: React.FC<Props> = ({ result, factors }) => {
     nodeGroups.append("circle")
         .attr("r", nodeRadius)
         .attr("fill", "white")
-        .attr("stroke", (d: any) => getCategoryColor(d.data.category))
+        .attr("stroke", (d: any) => getCategoryColorHex(d.data.category))
         .attr("stroke-width", 3)
         .attr("cursor", "pointer")
         .on("mouseover", function() { d3.select(this).attr("fill", "#f1f5f9"); })

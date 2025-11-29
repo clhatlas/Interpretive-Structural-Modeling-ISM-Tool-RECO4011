@@ -59,7 +59,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 text-slate-900 selection:bg-emerald-500/30">
+    <div className="min-h-screen bg-stone-50 text-slate-900 selection:bg-emerald-500/30 flex flex-col">
       {/* Header */}
       <header className="border-b border-emerald-100 bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -68,11 +68,11 @@ const App: React.FC = () => {
               <HardHat className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-xl font-bold text-emerald-800 hidden md:block whitespace-nowrap">
-              SSIM Construction (TEST)
+              ISM Tool
             </h1>
             <span className="text-emerald-200 hidden md:block">|</span>
             <p className="text-xs md:text-sm lg:text-base font-semibold text-emerald-900 truncate max-w-[200px] md:max-w-none">
-                Confined Space Accidents Critical Factors Network Mapping
+                SSIM & MICMAC Analysis (Trial Version)
             </p>
           </div>
           <div className="hidden md:flex items-center gap-4 text-sm font-medium text-slate-400">
@@ -86,13 +86,20 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-10 print:p-0">
+      <main className="max-w-7xl mx-auto px-6 py-10 print:p-0 flex-grow w-full">
         
         {step === AppStep.DEFINE_FACTORS && (
           <div className="space-y-6 animate-in zoom-in-95 duration-500">
-             <div className="bg-white p-6 rounded-xl border-l-4 border-l-emerald-500 border-y border-r border-slate-200 shadow-sm mb-8">
-                <h2 className="text-lg font-semibold text-emerald-900 mb-2">Project Scope</h2>
-                <p className="text-slate-700 italic">"{topic}"</p>
+             
+             {/* App Description / Instructions */}
+             <div className="bg-gradient-to-r from-emerald-50 to-white p-6 rounded-xl border border-emerald-100 shadow-sm">
+                <h2 className="text-lg font-bold text-emerald-900 mb-2">Welcome to ISM Tool</h2>
+                <p className="text-slate-700 leading-relaxed">
+                  This intelligent tool helps you analyze complex systems. Start by <strong>filling in the factors</strong> below. 
+                  Next, define the <strong>SSIM Matrix</strong> to map relationships. The app will then generate the 
+                  <strong> Hierarchy Model</strong>, visualize <strong>Interrelationships</strong>, calculate the <strong>Transitivity Table</strong>, 
+                  and perform <strong>MICMAC analysis</strong>.
+                </p>
              </div>
 
              <FactorInput 
@@ -124,6 +131,15 @@ const App: React.FC = () => {
           />
         )}
       </main>
+
+      {/* Footer Disclaimer */}
+      <footer className="w-full border-t border-slate-200 bg-white py-6 mt-auto print:hidden">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+            <p className="text-xs text-slate-400">
+                Disclaimer: This Web App is made by Atlas Cheung with the help of Google AI Studio for academic use only. This application collects no personal information.
+            </p>
+        </div>
+      </footer>
     </div>
   );
 };

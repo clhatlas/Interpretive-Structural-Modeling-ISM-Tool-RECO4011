@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ISMElement } from '../types';
 import { Tag, Plus, Trash2, Edit2, Save, X } from 'lucide-react';
 
@@ -9,21 +9,59 @@ interface Props {
   onNext: () => void;
 }
 
-// Helper to get category color
-export const getCategoryColorClasses = (category?: string) => {
-  switch (category) {
-    case 'Management': return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'Cost': return 'bg-rose-100 text-rose-800 border-rose-200';
-    case 'Organization': return 'bg-purple-100 text-purple-800 border-purple-200';
-    case 'Technology': return 'bg-cyan-100 text-cyan-800 border-cyan-200';
-    case 'Knowledge': return 'bg-amber-100 text-amber-800 border-amber-200';
-    case 'Process': return 'bg-orange-100 text-orange-800 border-orange-200';
-    case 'Policy': return 'bg-slate-200 text-slate-800 border-slate-300';
-    default: return 'bg-emerald-50 text-emerald-800 border-emerald-200';
-  }
+// Centralized Color Palette
+const PALETTE = [
+  { name: 'Blue', bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200', borderL: 'border-l-blue-400', hex: '#3b82f6' },
+  { name: 'Rose', bg: 'bg-rose-100', text: 'text-rose-800', border: 'border-rose-200', borderL: 'border-l-rose-400', hex: '#e11d48' },
+  { name: 'Purple', bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-200', borderL: 'border-l-purple-400', hex: '#9333ea' },
+  { name: 'Cyan', bg: 'bg-cyan-100', text: 'text-cyan-800', border: 'border-cyan-200', borderL: 'border-l-cyan-400', hex: '#0891b2' },
+  { name: 'Amber', bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-200', borderL: 'border-l-amber-400', hex: '#d97706' },
+  { name: 'Orange', bg: 'bg-orange-100', text: 'text-orange-800', border: 'border-orange-200', borderL: 'border-l-orange-400', hex: '#ea580c' },
+  { name: 'Slate', bg: 'bg-slate-200', text: 'text-slate-800', border: 'border-slate-300', borderL: 'border-l-slate-400', hex: '#475569' },
+  { name: 'Emerald', bg: 'bg-emerald-100', text: 'text-emerald-800', border: 'border-emerald-200', borderL: 'border-l-emerald-400', hex: '#10b981' },
+  { name: 'Indigo', bg: 'bg-indigo-100', text: 'text-indigo-800', border: 'border-indigo-200', borderL: 'border-l-indigo-400', hex: '#4f46e5' },
+  { name: 'Pink', bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-200', borderL: 'border-l-pink-400', hex: '#db2777' },
+  { name: 'Teal', bg: 'bg-teal-100', text: 'text-teal-800', border: 'border-teal-200', borderL: 'border-l-teal-400', hex: '#14b8a6' },
+  { name: 'Lime', bg: 'bg-lime-100', text: 'text-lime-800', border: 'border-lime-200', borderL: 'border-l-lime-400', hex: '#84cc16' },
+];
+
+const KNOWN_MAPPINGS: Record<string, number> = {
+  'Management': 0,
+  'Cost': 1,
+  'Organization': 2,
+  'Technology': 3,
+  'Knowledge': 4,
+  'Process': 5,
+  'Policy': 6,
+  'Environment': 7,
+  'Safety': 8,
 };
 
-const CATEGORIES = ['Management', 'Cost', 'Organization', 'Technology', 'Knowledge', 'Process', 'Policy', 'Environment', 'Safety', 'Other'];
+// Helper to get category theme (Dynamic)
+export const getCategoryTheme = (category?: string) => {
+  if (!category) return PALETTE[7]; // Default Emerald
+  
+  // Check known mappings first
+  if (KNOWN_MAPPINGS[category] !== undefined) {
+    return PALETTE[KNOWN_MAPPINGS[category]];
+  }
+  
+  // Hash string for consistent random color
+  let hash = 0;
+  for (let i = 0; i < category.length; i++) {
+    hash = category.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return PALETTE[Math.abs(hash) % PALETTE.length];
+};
+
+export const getCategoryColorClasses = (category?: string) => {
+  const theme = getCategoryTheme(category);
+  return `${theme.bg} ${theme.text} ${theme.border}`;
+};
+
+export const getCategoryColorHex = (category?: string) => getCategoryTheme(category).hex;
+
+const DEFAULT_CATEGORIES = ['Management', 'Cost', 'Organization', 'Technology', 'Knowledge', 'Process', 'Policy', 'Environment', 'Safety'];
 
 const FactorInput: React.FC<Props> = ({ factors, setFactors, onNext }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -32,6 +70,13 @@ const FactorInput: React.FC<Props> = ({ factors, setFactors, onNext }) => {
   // New Factor State
   const [isAdding, setIsAdding] = useState(false);
   const [newFactor, setNewFactor] = useState({ name: '', description: '', category: 'Management' });
+
+  // Compute unique categories for suggestion list
+  const availableCategories = useMemo(() => {
+    const existing = new Set(factors.map(f => f.category || '').filter(Boolean));
+    DEFAULT_CATEGORIES.forEach(c => existing.add(c));
+    return Array.from(existing).sort();
+  }, [factors]);
 
   // Add Factor Handler
   const handleAddFactor = () => {
@@ -110,13 +155,17 @@ const FactorInput: React.FC<Props> = ({ factors, setFactors, onNext }) => {
                     />
                 </div>
                 <div className="md:col-span-2">
-                    <select 
+                    <input 
+                        list="category-options-new"
+                        type="text"
+                        placeholder="Category"
                         value={newFactor.category}
                         onChange={e => setNewFactor({...newFactor, category: e.target.value})}
                         className="w-full p-2 rounded border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none"
-                    >
-                        {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                    </select>
+                    />
+                    <datalist id="category-options-new">
+                        {availableCategories.map(cat => <option key={cat} value={cat} />)}
+                    </datalist>
                 </div>
                 <div className="md:col-span-2 flex items-center">
                     <button 
@@ -156,13 +205,16 @@ const FactorInput: React.FC<Props> = ({ factors, setFactors, onNext }) => {
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <select 
-                                value={editValues.category}
+                            <input 
+                                list={`category-options-${factor.id}`}
+                                value={editValues.category || ''}
                                 onChange={e => setEditValues({...editValues, category: e.target.value})}
                                 className="w-full p-1.5 text-sm rounded border border-slate-300 outline-none"
-                            >
-                                {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                            </select>
+                                placeholder="Category"
+                            />
+                            <datalist id={`category-options-${factor.id}`}>
+                                {availableCategories.map(cat => <option key={cat} value={cat} />)}
+                            </datalist>
                         </div>
                         <div className="md:col-span-2 flex items-center gap-2 justify-end">
                             <button onClick={saveEdit} className="p-1.5 bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200" title="Save">
