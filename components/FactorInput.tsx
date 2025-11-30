@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef } from 'react';
 import { ISMElement } from '../types';
 import { Tag, Plus, Trash2, Edit2, Save, X, Upload, FileJson, FileText, Trash, FileDown, ArrowRight, Check } from 'lucide-react';
@@ -45,11 +44,11 @@ export const getCategoryTheme = (category?: string) => {
   
   const normalizedCat = category.toLowerCase().trim();
   
-  // Check known mappings (case-insensitive)
-  for (const key in KNOWN_MAPPINGS) {
-      if (normalizedCat.includes(key)) {
-          return PALETTE[KNOWN_MAPPINGS[key]];
-      }
+  // Check known mappings - EXACT MATCH ONLY
+  // This ensures "Management A" and "Management B" are treated as different categories
+  // rather than both matching "management" and getting the same color.
+  if (KNOWN_MAPPINGS[normalizedCat] !== undefined) {
+      return PALETTE[KNOWN_MAPPINGS[normalizedCat]];
   }
 
   // Robust Hashing for unknown categories
