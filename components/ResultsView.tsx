@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { ISMResult, ISMElement } from '../types';
 import HierarchyGraph from './HierarchyGraph';
@@ -28,40 +29,47 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
         backgroundColor: '#ffffff',
         scale: 2, // High resolution
         logging: false,
+        windowWidth: 3000, // Simulate wide window to capture full width tables/charts
         onclone: (clonedDoc) => {
-            // Apply Times New Roman font family to the cloned container
+            // 1. Inject Global Styles for Font
+            const style = clonedDoc.createElement('style');
+            style.innerHTML = `
+                * { 
+                    font-family: "Times New Roman", Times, serif !important; 
+                    -webkit-font-smoothing: antialiased;
+                }
+            `;
+            clonedDoc.head.appendChild(style);
+
+            // 2. Prepare Main Container
             const element = clonedDoc.querySelector('.print-content') as HTMLElement;
             if (element) {
-                element.style.fontFamily = '"Times New Roman", Times, serif';
                 element.style.width = 'fit-content';
+                element.style.minWidth = '100%';
                 element.style.height = 'auto';
                 element.style.overflow = 'visible';
-                element.style.padding = '50px';
+                element.style.padding = '40px';
                 
-                // Force font on all children as well
-                const allElements = element.querySelectorAll('*');
-                allElements.forEach((el) => {
-                    (el as HTMLElement).style.fontFamily = '"Times New Roman", Times, serif';
-                });
-
-                // Expand scrollables
-                const scrollables = element.querySelectorAll('.overflow-x-auto');
+                // 3. Expand All Scrollable Areas
+                const scrollables = element.querySelectorAll('.overflow-x-auto, .overflow-auto');
                 scrollables.forEach(el => {
-                    (el as HTMLElement).style.overflow = 'visible';
-                    (el as HTMLElement).style.width = 'auto';
-                    (el as HTMLElement).style.display = 'block';
+                    const htmlEl = el as HTMLElement;
+                    htmlEl.style.overflow = 'visible';
+                    htmlEl.style.width = 'max-content'; // Force full width
+                    htmlEl.style.maxWidth = 'none';
+                    htmlEl.style.display = 'block';
                 });
             }
             
-            // Inject style for SVGs to ensure they use Times New Roman
+            // 4. Inject style for SVGs to ensure they use Times New Roman
             const svgs = clonedDoc.querySelectorAll('svg');
             svgs.forEach(svg => {
-                const style = document.createElement('style');
-                style.innerHTML = `
+                const svgStyle = clonedDoc.createElement('style');
+                svgStyle.innerHTML = `
                     text { font-family: "Times New Roman", Times, serif !important; }
                     .node text { font-family: "Times New Roman", Times, serif !important; }
                 `;
-                svg.prepend(style);
+                svg.prepend(svgStyle);
             });
         }
       });
@@ -95,14 +103,19 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
         
         const svgElement = document.getElementById(svgId) as unknown as SVGSVGElement;
         if (svgElement) {
+            // Clone the SVG node to manipulate it safely without affecting the live DOM
+            const clone = svgElement.cloneNode(true) as SVGSVGElement;
+            
+            // Inject Times New Roman style
+            const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+            style.textContent = `
+                text { font-family: "Times New Roman", Times, serif !important; }
+                .node text { font-family: "Times New Roman", Times, serif !important; }
+            `;
+            clone.prepend(style);
+
             const serializer = new XMLSerializer();
-            // Inject Times New Roman style directly into SVG string
-            let svgString = serializer.serializeToString(svgElement);
-            if (!svgString.includes('<style>')) {
-                 svgString = svgString.replace('<svg', '<svg><style>text { font-family: "Times New Roman", Times, serif !important; }</style>');
-            } else {
-                 svgString = svgString.replace('</style>', ' text { font-family: "Times New Roman", Times, serif !important; }</style>');
-            }
+            const svgString = serializer.serializeToString(clone);
 
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -143,29 +156,45 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                 backgroundColor: '#ffffff',
                 scale: 2, // High resolution
                 logging: false,
+                windowWidth: 3000, // Simulate wide window
                 onclone: (clonedDoc) => {
-                    // Fix clipping issues by expanding container and removing scrollbars in the clone
+                    // 1. Inject Global Styles for Font
+                    const style = clonedDoc.createElement('style');
+                    style.innerHTML = `
+                        * { 
+                            font-family: "Times New Roman", Times, serif !important; 
+                            -webkit-font-smoothing: antialiased;
+                        }
+                    `;
+                    clonedDoc.head.appendChild(style);
+
+                    // 2. Prepare Main Container
                     const element = clonedDoc.querySelector('.print-content') as HTMLElement;
                     if (element) {
                         element.style.width = 'fit-content';
+                        element.style.minWidth = '100%';
                         element.style.height = 'auto';
                         element.style.overflow = 'visible';
-                        element.style.padding = '50px'; // Add generous padding to ensure margins/keys are visible
-                        element.style.fontFamily = '"Times New Roman", Times, serif'; // Enforce Font
+                        element.style.padding = '50px';
                         
-                        // Force font on all children
-                        element.querySelectorAll('*').forEach((el) => {
-                            (el as HTMLElement).style.fontFamily = '"Times New Roman", Times, serif';
-                        });
-
-                        // Expand all internal scrollable tables
-                        const scrollables = element.querySelectorAll('.overflow-x-auto');
+                        // 3. Expand All Scrollable Areas
+                        const scrollables = element.querySelectorAll('.overflow-x-auto, .overflow-auto');
                         scrollables.forEach(el => {
-                            (el as HTMLElement).style.overflow = 'visible';
-                            (el as HTMLElement).style.width = 'auto';
-                            (el as HTMLElement).style.display = 'block';
+                            const htmlEl = el as HTMLElement;
+                            htmlEl.style.overflow = 'visible';
+                            htmlEl.style.width = 'max-content'; // Force full width
+                            htmlEl.style.maxWidth = 'none';
+                            htmlEl.style.display = 'block';
                         });
                     }
+                    
+                    // 4. Inject style for SVGs (like Micmac)
+                    const svgs = clonedDoc.querySelectorAll('svg');
+                    svgs.forEach(svg => {
+                        const svgStyle = clonedDoc.createElement('style');
+                        svgStyle.innerHTML = `text { font-family: "Times New Roman", Times, serif !important; }`;
+                        svg.prepend(svgStyle);
+                    });
                 }
             });
             const link = document.createElement('a');
