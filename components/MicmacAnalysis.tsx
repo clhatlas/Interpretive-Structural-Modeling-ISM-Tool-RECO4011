@@ -104,8 +104,8 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
     const width = Math.max(containerWidth, 600); // Min width 600px
     const height = 500;
     // Increased margins to prevent clipping of axis labels and extreme points
-    // top increased to 60 to allow space for labels/legend
-    const margin = { top: 60, right: 80, bottom: 60, left: 60 };
+    // Right margin increased to accommodate labels for points on the right edge
+    const margin = { top: 60, right: 100, bottom: 60, left: 60 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
@@ -116,7 +116,8 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
       .attr("width", width)
       .attr("height", height)
       .attr("viewBox", [0, 0, width, height])
-      .style("background-color", "#ffffff");
+      .style("background-color", "#ffffff")
+      .style("overflow", "visible"); // Allow labels to overflow if needed
 
     const g = svg.append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
@@ -380,8 +381,8 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
             ) : (
                 <ul className="space-y-1">
                     {items.map(f => (
-                        <li key={f.id} className="text-sm flex items-center gap-2">
-                             <span className="font-bold text-xs bg-slate-100 px-1 rounded">{f.name}</span>
+                        <li key={f.id} className="text-sm flex items-start gap-2">
+                             <span className="font-bold text-xs bg-slate-100 px-1 rounded mt-0.5">{f.name}</span>
                              <span className="truncate" title={f.description}>{f.description}</span>
                         </li>
                     ))}

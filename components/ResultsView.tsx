@@ -66,9 +66,20 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                    (el as HTMLElement).style.whiteSpace = 'nowrap';
                    (el as HTMLElement).style.width = 'max-content';
                 });
+
+                // 5. Expand truncated text (Fix for Micmac lists export)
+                const truncated = clonedDoc.querySelectorAll('.truncate');
+                truncated.forEach(el => {
+                    el.classList.remove('truncate');
+                    const htmlEl = el as HTMLElement;
+                    htmlEl.style.whiteSpace = 'normal';
+                    htmlEl.style.overflow = 'visible';
+                    htmlEl.style.textOverflow = 'clip';
+                    htmlEl.style.wordBreak = 'break-word';
+                });
             }
             
-            // 5. Inject style for SVGs to ensure they use Times New Roman
+            // 6. Inject style for SVGs to ensure they use Times New Roman
             const svgs = clonedDoc.querySelectorAll('svg');
             svgs.forEach(svg => {
                 const svgStyle = clonedDoc.createElement('style');
@@ -81,6 +92,7 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                 svg.setAttribute('width', '100%');
                 svg.style.width = '100%';
                 svg.style.maxWidth = 'none';
+                svg.style.overflow = 'visible';
             });
         }
       });
@@ -204,9 +216,20 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                            (el as HTMLElement).style.whiteSpace = 'nowrap';
                            (el as HTMLElement).style.width = 'max-content';
                         });
+
+                        // 5. Expand truncated text
+                        const truncated = clonedDoc.querySelectorAll('.truncate');
+                        truncated.forEach(el => {
+                            el.classList.remove('truncate');
+                            const htmlEl = el as HTMLElement;
+                            htmlEl.style.whiteSpace = 'normal';
+                            htmlEl.style.overflow = 'visible';
+                            htmlEl.style.textOverflow = 'clip';
+                            htmlEl.style.wordBreak = 'break-word';
+                        });
                     }
                     
-                    // 5. Inject style for SVGs (like Micmac)
+                    // 6. Inject style for SVGs (like Micmac)
                     const svgs = clonedDoc.querySelectorAll('svg');
                     svgs.forEach(svg => {
                         const svgStyle = clonedDoc.createElement('style');
@@ -215,6 +238,7 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                         svg.setAttribute('width', '100%');
                         svg.style.width = '100%';
                         svg.style.maxWidth = 'none';
+                        svg.style.overflow = 'visible';
                     });
                 }
             });
@@ -329,10 +353,10 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
 
   const renderSimpleMatrix = (matrix: number[][]) => (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-4 text-xs bg-slate-50 p-3 rounded border border-slate-200 matrix-key whitespace-nowrap">
+      <div className="flex flex-wrap items-center gap-4 text-xs bg-slate-50 p-3 rounded border border-slate-200 matrix-key whitespace-nowrap">
           <span className="font-bold text-slate-700">Key:</span>
-          <div className="flex items-center gap-1.5"><span className="w-6 h-6 flex items-center justify-center bg-blue-100 text-blue-900 font-bold border border-blue-200 rounded text-[10px]">1</span> Relationship</div>
-          <div className="flex items-center gap-1.5"><span className="w-6 h-6 flex items-center justify-center bg-white text-slate-300 border border-slate-200 rounded text-[10px]">0</span> No Relation</div>
+          <div className="flex items-center gap-1.5"><span className="min-w-[1.5rem] h-6 px-1 flex items-center justify-center bg-blue-100 text-blue-900 font-bold border border-blue-200 rounded text-[10px]">1</span> Relationship</div>
+          <div className="flex items-center gap-1.5"><span className="min-w-[1.5rem] h-6 px-1 flex items-center justify-center bg-white text-slate-300 border border-slate-200 rounded text-[10px]">0</span> No Relation</div>
       </div>
       <div className="overflow-x-auto pb-4">
         <table className="w-full border-collapse text-sm border border-slate-300 table-auto">
@@ -378,11 +402,11 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
     return (
       <div className="space-y-4">
         {/* Key / Legend */}
-        <div className="flex flex-wrap gap-4 text-xs bg-slate-50 p-3 rounded border border-slate-200 matrix-key whitespace-nowrap">
+        <div className="flex flex-wrap items-center gap-4 text-xs bg-slate-50 p-3 rounded border border-slate-200 matrix-key whitespace-nowrap">
             <span className="font-bold text-slate-700">Key:</span>
-            <div className="flex items-center gap-1.5"><span className="w-6 h-6 flex items-center justify-center bg-blue-100 text-blue-900 font-bold border border-blue-200 rounded text-[10px]">1</span> Direct</div>
-            <div className="flex items-center gap-1.5"><span className="w-6 h-6 flex items-center justify-center bg-amber-100 text-amber-900 font-bold border border-amber-200 rounded text-[10px]">1*</span> Transitive</div>
-            <div className="flex items-center gap-1.5"><span className="w-6 h-6 flex items-center justify-center bg-white text-slate-300 border border-slate-200 rounded text-[10px]">0</span> No Relation</div>
+            <div className="flex items-center gap-1.5"><span className="min-w-[1.5rem] h-6 px-1 flex items-center justify-center bg-blue-100 text-blue-900 font-bold border border-blue-200 rounded text-[10px]">1</span> Direct</div>
+            <div className="flex items-center gap-1.5"><span className="min-w-[1.5rem] h-6 px-1 flex items-center justify-center bg-amber-100 text-amber-900 font-bold border border-amber-200 rounded text-[10px]">1*</span> Transitive</div>
+            <div className="flex items-center gap-1.5"><span className="min-w-[1.5rem] h-6 px-1 flex items-center justify-center bg-white text-slate-300 border border-slate-200 rounded text-[10px]">0</span> No Relation</div>
         </div>
 
         <div className="overflow-x-auto pb-4">
