@@ -86,6 +86,7 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                 svgStyle.innerHTML = `
                     text { font-family: "Times New Roman", Times, serif !important; }
                     .node text { font-family: "Times New Roman", Times, serif !important; }
+                    foreignObject div { font-family: "Times New Roman", Times, serif !important; }
                 `;
                 svg.prepend(svgStyle);
                 // Ensure SVG is fully visible
@@ -134,6 +135,7 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
             style.textContent = `
                 text { font-family: "Times New Roman", Times, serif !important; }
                 .node text { font-family: "Times New Roman", Times, serif !important; }
+                foreignObject div { font-family: "Times New Roman", Times, serif !important; }
             `;
             clone.prepend(style);
 
@@ -233,7 +235,10 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                     const svgs = clonedDoc.querySelectorAll('svg');
                     svgs.forEach(svg => {
                         const svgStyle = clonedDoc.createElement('style');
-                        svgStyle.innerHTML = `text { font-family: "Times New Roman", Times, serif !important; }`;
+                        svgStyle.innerHTML = `
+                            text { font-family: "Times New Roman", Times, serif !important; }
+                            foreignObject div { font-family: "Times New Roman", Times, serif !important; }
+                        `;
                         svg.prepend(svgStyle);
                         svg.setAttribute('width', '100%');
                         svg.style.width = '100%';
