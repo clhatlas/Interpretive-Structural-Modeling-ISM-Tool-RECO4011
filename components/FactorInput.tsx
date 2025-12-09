@@ -45,9 +45,6 @@ export const getCategoryTheme = (category?: string) => {
   
   const normalizedCat = category.toLowerCase().trim();
   
-  // Check known mappings - EXACT MATCH ONLY
-  // This ensures "Management A" and "Management B" are treated as different categories
-  // rather than both matching "management" and getting the same color.
   if (KNOWN_MAPPINGS[normalizedCat] !== undefined) {
       return PALETTE[KNOWN_MAPPINGS[normalizedCat]];
   }
