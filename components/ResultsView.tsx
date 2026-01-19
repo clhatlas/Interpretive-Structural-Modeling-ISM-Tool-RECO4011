@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { ISMResult, ISMElement } from '../types';
 import HierarchyGraph from './HierarchyGraph';
@@ -37,6 +36,26 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                 * { 
                     font-family: "Times New Roman", Times, serif !important; 
                     -webkit-font-smoothing: antialiased;
+                }
+                /* Enlarge fonts for PDF export */
+                .print-content {
+                    font-size: 14pt !important;
+                }
+                .print-content table th, .print-content table td {
+                    font-size: 12pt !important;
+                    padding: 8px !important;
+                }
+                .print-content h3 {
+                    font-size: 18pt !important;
+                    margin-bottom: 20px !important;
+                }
+                /* Boost SVG text slightly */
+                text {
+                    font-size: 14px !important;
+                }
+                .node foreignObject div {
+                    font-size: 14px !important;
+                    line-height: 1.2 !important;
                 }
             `;
             clonedDoc.head.appendChild(style);

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ISM Tool - SSIM & MICMAC Analysis (Trial Version)</title>
+    <title>ISM Tool - SSIM & MICMAC Analysis</title>
     
     <!-- PWA / iOS Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -52,7 +52,7 @@
       /* Print Styles for PDF Export */
       @media print {
         @page {
-          margin: 1.5cm;
+          margin: 1.0cm;
           size: landscape;
         }
         body {
@@ -60,6 +60,7 @@
           color: black !important;
           print-color-adjust: exact;
           -webkit-print-color-adjust: exact;
+          font-size: 12pt !important;
         }
         /* Force Times New Roman for PDF Export */
         body, * {
@@ -76,12 +77,22 @@
           box-shadow: none !important;
           border: none !important;
           overflow: visible !important;
+          font-size: 12pt !important;
         }
         /* Expand containers */
         div {
           overflow: visible !important;
           height: auto !important;
           max-height: none !important;
+        }
+        
+        /* Enlarge table fonts */
+        th, td {
+            font-size: 12pt !important;
+            padding: 8px !important;
+        }
+        h1, h2, h3, h4 {
+            font-size: 16pt !important;
         }
       }
     </style>

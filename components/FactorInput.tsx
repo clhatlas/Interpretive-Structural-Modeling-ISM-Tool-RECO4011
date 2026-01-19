@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef } from 'react';
 import { ISMElement } from '../types';
 import { Tag, Plus, Trash2, Edit2, Save, X, Upload, FileJson, FileText, Trash, FileDown, ArrowRight, Check } from 'lucide-react';
@@ -27,16 +26,20 @@ const PALETTE = [
 
 const KNOWN_MAPPINGS: Record<string, number> = {
   'management': 0, // Red
+  'supervision': 0, // Red
   'cost': 8, // Orange
   'financial': 8,
   'organization': 1, // Blue
   'technology': 6, // Cyan
   'technical': 6,
   'knowledge': 4, // Purple
+  'personal reason': 5, // Pink (Changed to Pink to distinguish from purple/knowledge if needed, or keep purple)
   'process': 3, // Amber
   'policy': 9, // Slate
   'legal': 9,
+  'legal and policy': 9, // Slate
   'environment': 2, // Emerald
+  'physical environment': 2, // Emerald
   'safety': 7, // Lime
 };
 
@@ -67,13 +70,22 @@ export const getCategoryColorClasses = (category?: string) => {
 
 export const getCategoryColorHex = (category?: string) => getCategoryTheme(category).hex;
 
-const DEFAULT_CATEGORIES = ['Management', 'Cost', 'Organization', 'Technology', 'Knowledge', 'Process', 'Policy', 'Environment', 'Safety'];
+const DEFAULT_CATEGORIES = [
+  'Legal and Policy', 
+  'Organization', 
+  'Personal Reason', 
+  'Physical Environment', 
+  'Supervision', 
+  'Management', 
+  'Cost', 
+  'Technology'
+];
 
 const FactorInput: React.FC<Props> = ({ factors, setFactors, onNext }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Partial<ISMElement>>({});
   const [isAdding, setIsAdding] = useState(false);
-  const [newFactor, setNewFactor] = useState({ name: '', description: '', category: 'Management' });
+  const [newFactor, setNewFactor] = useState({ name: '', description: '', category: 'Organization' });
   
   // Confirmation states to avoid window.confirm issues
   const [clearConfirm, setClearConfirm] = useState(false);
@@ -99,7 +111,7 @@ const FactorInput: React.FC<Props> = ({ factors, setFactors, onNext }) => {
       category: newFactor.category
     };
     setFactors([...factors, factor]);
-    setNewFactor({ name: '', description: '', category: 'Management' });
+    setNewFactor({ name: '', description: '', category: 'Organization' });
     setIsAdding(false);
   };
 

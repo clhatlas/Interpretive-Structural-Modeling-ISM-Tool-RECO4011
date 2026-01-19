@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AppStep, ISMElement, SSIMData, ISMResult } from './types';
 import FactorInput from './components/FactorInput';
@@ -7,22 +6,21 @@ import ResultsView from './components/ResultsView';
 import { runISMAnalysis } from './services/ismLogic';
 import { HardHat, BookOpen, ChevronDown, ChevronUp, Construction } from 'lucide-react';
 
-// Default factors based on the Sustainability Barriers input
+// Default factors based on the user provided list (Confined Space / Safety Factors)
 const DEFAULT_FACTORS: ISMElement[] = [
-  { id: 'F1', name: 'F1', description: 'Lack of commitment from top management', category: 'Management' },
-  { id: 'F2', name: 'F2', description: 'Financial Constraints', category: 'Cost' },
-  { id: 'F3', name: 'F3', description: 'Organizational culture inhibitive to sustainability/CSR', category: 'Organization' },
-  { id: 'F4', name: 'F4', description: 'Lack of new technology/materials and processes on sustainability', category: 'Technology' },
-  { id: 'F5', name: 'F5', description: 'Lack of awareness of benefits of sustainability', category: 'Knowledge' },
-  { id: 'F6', name: 'F6', description: 'Lack of green purchasing', category: 'Process' },
-  { id: 'F7', name: 'F7', description: 'Lack of regulations and enforcement of environment standards', category: 'Policy' },
-  { id: 'F8', name: 'F8', description: 'Lack of R&D on sustainability', category: 'Technology' },
-  { id: 'F9', name: 'F9', description: 'Lack of training/human expertise on sustainability', category: 'Knowledge' },
-  { id: 'F10', name: 'F10', description: 'Resistance to change and adopting innovation in sustainability', category: 'Organization' },
-  { id: 'F11', name: 'F11', description: 'Lack of performance metrics/evaluation standards on sustainability', category: 'Process' },
+  { id: 'L01', name: 'L01', description: 'Incompliance with safety regulations', category: 'Legal and Policy' },
+  { id: 'L02', name: 'L02', description: 'Lack of On-site safety management', category: 'Legal and Policy' },
+  { id: 'O01', name: 'O01', description: 'Improper Use of PPE', category: 'Organization' },
+  { id: 'O10', name: 'O10', description: 'Unauthorized entry or operation', category: 'Organization' },
+  { id: 'O11', name: 'O11', description: 'Lack of Gas monitoring', category: 'Organization' },
+  { id: 'PR01', name: 'PR01', description: 'Lack of Safety awareness', category: 'Personal Reason' },
+  { id: 'PE01', name: 'PE01', description: 'Oxygen Deficiency', category: 'Physical Environment' },
+  { id: 'PE03', name: 'PE03', description: 'Toxic or Harmful gases', category: 'Physical Environment' },
+  { id: 'PE04', name: 'PE04', description: 'Inadequate Ventilation', category: 'Physical Environment' },
+  { id: 'S01', name: 'S01', description: 'Inadequate Supervision', category: 'Supervision' },
 ];
 
-const FIXED_TOPIC = "Barriers to Sustainability Implementation";
+const FIXED_TOPIC = "Confined Space Risk Factors";
 
 const App: React.FC = () => {
   // Initialize directly to Factor Definition step with default data
@@ -76,7 +74,7 @@ const App: React.FC = () => {
                 ISM Tool
               </h1>
               <p className="text-[10px] sm:text-xs text-slate-500 font-medium tracking-wide mt-1 uppercase">
-                SSIM & MICMAC Analysis <span className="text-yellow-600 font-bold px-1 bg-yellow-50 rounded border border-yellow-100 ml-1">TRIAL</span>
+                SSIM & MICMAC Analysis
               </p>
             </div>
           </div>
