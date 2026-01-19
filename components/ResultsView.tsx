@@ -31,8 +31,9 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
         windowWidth: 3000, // Simulate wide window to capture full width tables/charts
         onclone: (clonedDoc) => {
             // 1. Inject Global Styles for Font
-            // We use VERY LARGE fonts here because wide content (like matrices)
-            // will be scaled down to fit the A4 PDF page. Large fonts ensure legibility after scaling.
+            // Use Times New Roman globally for PDF consistency.
+            // We REMOVED the aggressive font-size overrides for SVGs because they break layout in fixed-size boxes.
+            // The tables (.print-content table) can handle larger fonts as they reflow.
             const style = clonedDoc.createElement('style');
             style.innerHTML = `
                 * { 
@@ -40,33 +41,25 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                     -webkit-font-smoothing: antialiased;
                 }
                 .print-content {
-                    font-size: 24pt !important;
+                    font-size: 14pt !important;
                     padding: 40px !important;
                 }
                 .print-content table th, .print-content table td {
-                    font-size: 20pt !important;
-                    padding: 12px !important;
-                    border-width: 2px !important;
+                    font-size: 14pt !important;
+                    padding: 8px !important;
+                    border-width: 1px !important;
                 }
                 .print-content h3 {
-                    font-size: 32pt !important;
-                    margin-bottom: 30px !important;
-                }
-                /* Boost SVG text */
-                text {
-                    font-size: 24px !important;
-                }
-                .node foreignObject div {
-                    font-size: 22px !important;
-                    line-height: 1.1 !important;
+                    font-size: 24pt !important;
+                    margin-bottom: 20px !important;
                 }
                 /* Keys and Legends */
                 .matrix-key {
-                     font-size: 18pt !important;
-                     padding: 15px !important;
+                     font-size: 12pt !important;
+                     padding: 10px !important;
                 }
                 .matrix-key span, .matrix-key div {
-                     font-size: 18pt !important;
+                     font-size: 12pt !important;
                 }
             `;
             clonedDoc.head.appendChild(style);
@@ -108,14 +101,15 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                 });
             }
             
-            // 6. Inject style for SVGs to ensure they use Times New Roman
+            // 6. Inject style for SVGs to ensure they use Times New Roman.
+            // Do NOT force font-size here as it breaks fixed SVG layouts.
             const svgs = clonedDoc.querySelectorAll('svg');
             svgs.forEach(svg => {
                 const svgStyle = clonedDoc.createElement('style');
                 svgStyle.innerHTML = `
-                    text { font-family: "Times New Roman", Times, serif !important; font-size: 24px !important; }
-                    .node text { font-family: "Times New Roman", Times, serif !important; font-size: 24px !important; }
-                    foreignObject div { font-family: "Times New Roman", Times, serif !important; font-size: 22px !important; }
+                    text { font-family: "Times New Roman", Times, serif !important; }
+                    .node text { font-family: "Times New Roman", Times, serif !important; }
+                    foreignObject div { font-family: "Times New Roman", Times, serif !important; }
                 `;
                 svg.prepend(svgStyle);
                 // Ensure SVG is fully visible
@@ -159,12 +153,12 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
             // Clone the SVG node to manipulate it safely without affecting the live DOM
             const clone = svgElement.cloneNode(true) as SVGSVGElement;
             
-            // Inject Times New Roman style with larger fonts
+            // Inject Times New Roman style
             const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
             style.textContent = `
-                text { font-family: "Times New Roman", Times, serif !important; font-size: 24px !important; }
-                .node text { font-family: "Times New Roman", Times, serif !important; font-size: 24px !important; }
-                foreignObject div { font-family: "Times New Roman", Times, serif !important; font-size: 22px !important; }
+                text { font-family: "Times New Roman", Times, serif !important; }
+                .node text { font-family: "Times New Roman", Times, serif !important; }
+                foreignObject div { font-family: "Times New Roman", Times, serif !important; }
             `;
             clone.prepend(style);
 
@@ -220,15 +214,15 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                             -webkit-font-smoothing: antialiased;
                         }
                         .print-content {
-                            font-size: 24pt !important;
+                            font-size: 14pt !important;
                             padding: 40px !important;
                         }
                         .print-content table th, .print-content table td {
-                            font-size: 20pt !important;
-                            padding: 12px !important;
+                            font-size: 14pt !important;
+                            padding: 8px !important;
                         }
                         .print-content h3 {
-                            font-size: 32pt !important;
+                            font-size: 24pt !important;
                         }
                     `;
                     clonedDoc.head.appendChild(style);
@@ -275,8 +269,8 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                     svgs.forEach(svg => {
                         const svgStyle = clonedDoc.createElement('style');
                         svgStyle.innerHTML = `
-                            text { font-family: "Times New Roman", Times, serif !important; font-size: 24px !important; }
-                            foreignObject div { font-family: "Times New Roman", Times, serif !important; font-size: 22px !important; }
+                            text { font-family: "Times New Roman", Times, serif !important; }
+                            foreignObject div { font-family: "Times New Roman", Times, serif !important; }
                         `;
                         svg.prepend(svgStyle);
                         svg.setAttribute('width', '100%');

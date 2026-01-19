@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { ISMResult, ISMElement } from '../types';
@@ -175,13 +174,13 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
         .style("flex-direction", "column")
         .style("justify-content", "center")
         .style("align-items", "center")
-        .style("padding", "8px")
+        .style("padding", "4px")
         .style("box-sizing", "border-box")
         .style("text-align", "center")
         .style("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif")
         .html((d: any) => `
-          <div style="font-weight:bold; font-size:14px; color:#334155; margin-bottom:4px; line-height:1;">${d.data.name}</div>
-          <div style="font-size:11px; line-height:1.3; color:#1e293b; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;">
+          <div style="font-weight:bold; font-size:11px; color:#334155; margin-bottom:2px; line-height:1.1;">${d.data.name}</div>
+          <div style="font-size:9px; line-height:1.2; color:#1e293b; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;">
             ${d.data.description || d.data.name}
           </div>
         `);
