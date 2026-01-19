@@ -26,36 +26,47 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
     try {
       const canvas = await html2canvas(exportRef.current, {
         backgroundColor: '#ffffff',
-        scale: 2, // High resolution
+        scale: 3, // Higher resolution for crisp text when scaled
         logging: false,
         windowWidth: 3000, // Simulate wide window to capture full width tables/charts
         onclone: (clonedDoc) => {
             // 1. Inject Global Styles for Font
+            // We use VERY LARGE fonts here because wide content (like matrices)
+            // will be scaled down to fit the A4 PDF page. Large fonts ensure legibility after scaling.
             const style = clonedDoc.createElement('style');
             style.innerHTML = `
                 * { 
                     font-family: "Times New Roman", Times, serif !important; 
                     -webkit-font-smoothing: antialiased;
                 }
-                /* Enlarge fonts for PDF export */
                 .print-content {
-                    font-size: 14pt !important;
+                    font-size: 24pt !important;
+                    padding: 40px !important;
                 }
                 .print-content table th, .print-content table td {
-                    font-size: 12pt !important;
-                    padding: 8px !important;
+                    font-size: 20pt !important;
+                    padding: 12px !important;
+                    border-width: 2px !important;
                 }
                 .print-content h3 {
-                    font-size: 18pt !important;
-                    margin-bottom: 20px !important;
+                    font-size: 32pt !important;
+                    margin-bottom: 30px !important;
                 }
-                /* Boost SVG text slightly */
+                /* Boost SVG text */
                 text {
-                    font-size: 14px !important;
+                    font-size: 24px !important;
                 }
                 .node foreignObject div {
-                    font-size: 14px !important;
-                    line-height: 1.2 !important;
+                    font-size: 22px !important;
+                    line-height: 1.1 !important;
+                }
+                /* Keys and Legends */
+                .matrix-key {
+                     font-size: 18pt !important;
+                     padding: 15px !important;
+                }
+                .matrix-key span, .matrix-key div {
+                     font-size: 18pt !important;
                 }
             `;
             clonedDoc.head.appendChild(style);
@@ -67,7 +78,6 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                 element.style.minWidth = '100%';
                 element.style.height = 'auto';
                 element.style.overflow = 'visible';
-                element.style.padding = '40px';
                 
                 // 3. Expand All Scrollable Areas
                 const scrollables = element.querySelectorAll('.overflow-x-auto, .overflow-auto');
@@ -86,7 +96,7 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                    (el as HTMLElement).style.width = 'max-content';
                 });
 
-                // 5. Expand truncated text (Fix for Micmac lists export)
+                // 5. Expand truncated text
                 const truncated = clonedDoc.querySelectorAll('.truncate');
                 truncated.forEach(el => {
                     el.classList.remove('truncate');
@@ -103,9 +113,9 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
             svgs.forEach(svg => {
                 const svgStyle = clonedDoc.createElement('style');
                 svgStyle.innerHTML = `
-                    text { font-family: "Times New Roman", Times, serif !important; }
-                    .node text { font-family: "Times New Roman", Times, serif !important; }
-                    foreignObject div { font-family: "Times New Roman", Times, serif !important; }
+                    text { font-family: "Times New Roman", Times, serif !important; font-size: 24px !important; }
+                    .node text { font-family: "Times New Roman", Times, serif !important; font-size: 24px !important; }
+                    foreignObject div { font-family: "Times New Roman", Times, serif !important; font-size: 22px !important; }
                 `;
                 svg.prepend(svgStyle);
                 // Ensure SVG is fully visible
@@ -149,12 +159,12 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
             // Clone the SVG node to manipulate it safely without affecting the live DOM
             const clone = svgElement.cloneNode(true) as SVGSVGElement;
             
-            // Inject Times New Roman style
+            // Inject Times New Roman style with larger fonts
             const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
             style.textContent = `
-                text { font-family: "Times New Roman", Times, serif !important; }
-                .node text { font-family: "Times New Roman", Times, serif !important; }
-                foreignObject div { font-family: "Times New Roman", Times, serif !important; }
+                text { font-family: "Times New Roman", Times, serif !important; font-size: 24px !important; }
+                .node text { font-family: "Times New Roman", Times, serif !important; font-size: 24px !important; }
+                foreignObject div { font-family: "Times New Roman", Times, serif !important; font-size: 22px !important; }
             `;
             clone.prepend(style);
 
@@ -168,7 +178,7 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
             const vbWidth = svgElement.viewBox.baseVal.width;
             const vbHeight = svgElement.viewBox.baseVal.height;
             
-            const scale = 2; // High resolution
+            const scale = 3; // High resolution
             const padding = 50; // Add white padding around the image
             
             canvas.width = (vbWidth + padding * 2) * scale;
@@ -198,7 +208,7 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
         try {
             const canvas = await html2canvas(exportRef.current, {
                 backgroundColor: '#ffffff',
-                scale: 2, // High resolution
+                scale: 3, // High resolution
                 logging: false,
                 windowWidth: 3000, // Simulate wide window
                 onclone: (clonedDoc) => {
@@ -208,6 +218,17 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                         * { 
                             font-family: "Times New Roman", Times, serif !important; 
                             -webkit-font-smoothing: antialiased;
+                        }
+                        .print-content {
+                            font-size: 24pt !important;
+                            padding: 40px !important;
+                        }
+                        .print-content table th, .print-content table td {
+                            font-size: 20pt !important;
+                            padding: 12px !important;
+                        }
+                        .print-content h3 {
+                            font-size: 32pt !important;
                         }
                     `;
                     clonedDoc.head.appendChild(style);
@@ -219,7 +240,6 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                         element.style.minWidth = '100%';
                         element.style.height = 'auto';
                         element.style.overflow = 'visible';
-                        element.style.padding = '50px';
                         
                         // 3. Expand All Scrollable Areas
                         const scrollables = element.querySelectorAll('.overflow-x-auto, .overflow-auto');
@@ -255,8 +275,8 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                     svgs.forEach(svg => {
                         const svgStyle = clonedDoc.createElement('style');
                         svgStyle.innerHTML = `
-                            text { font-family: "Times New Roman", Times, serif !important; }
-                            foreignObject div { font-family: "Times New Roman", Times, serif !important; }
+                            text { font-family: "Times New Roman", Times, serif !important; font-size: 24px !important; }
+                            foreignObject div { font-family: "Times New Roman", Times, serif !important; font-size: 22px !important; }
                         `;
                         svg.prepend(svgStyle);
                         svg.setAttribute('width', '100%');
