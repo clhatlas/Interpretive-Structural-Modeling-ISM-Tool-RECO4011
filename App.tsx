@@ -10,13 +10,16 @@ import { HardHat, BookOpen, ChevronDown, ChevronUp, Construction } from 'lucide-
 const DEFAULT_FACTORS: ISMElement[] = [
   { id: 'L01', name: 'L01', description: 'Incompliance with safety regulations', category: 'Legal and Policy' },
   { id: 'L02', name: 'L02', description: 'Lack of On-site safety management', category: 'Legal and Policy' },
+  { id: 'M01', name: 'M01', description: 'Ineffective Risk Management', category: 'Management' },
   { id: 'O01', name: 'O01', description: 'Improper Use of PPE', category: 'Organization' },
+  { id: 'O05', name: 'O05', description: 'Inadequate Permit System', category: 'Organization' },
+  { id: 'O06', name: 'O06', description: 'Violation of Command', category: 'Organization' },
   { id: 'O10', name: 'O10', description: 'Unauthorized entry or operation', category: 'Organization' },
   { id: 'O11', name: 'O11', description: 'Lack of Gas monitoring', category: 'Organization' },
-  { id: 'PR01', name: 'PR01', description: 'Lack of Safety awareness', category: 'Personal Reason' },
   { id: 'PE01', name: 'PE01', description: 'Oxygen Deficiency', category: 'Physical Environment' },
   { id: 'PE03', name: 'PE03', description: 'Toxic or Harmful gases', category: 'Physical Environment' },
   { id: 'PE04', name: 'PE04', description: 'Inadequate Ventilation', category: 'Physical Environment' },
+  { id: 'PR01', name: 'PR01', description: 'Lack of Safety awareness', category: 'Personal Reason' },
   { id: 'S01', name: 'S01', description: 'Inadequate Supervision', category: 'Supervision' },
 ];
 
