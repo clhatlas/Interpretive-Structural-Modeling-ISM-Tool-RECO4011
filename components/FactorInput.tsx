@@ -10,57 +10,63 @@ interface Props {
 }
 
 // Professional Color Palette - High Contrast & Distinct
-// Using explicit class strings to ensure Tailwind picks them up
+// Expanded to ensure distinct colors for all common categories
 const PALETTE = [
-  { name: 'Red', bg: 'bg-red-100', text: 'text-red-900', border: 'border-red-300', borderL: 'border-l-red-600', hex: '#dc2626' },
-  { name: 'Blue', bg: 'bg-blue-100', text: 'text-blue-900', border: 'border-blue-300', borderL: 'border-l-blue-600', hex: '#2563eb' },
-  { name: 'Emerald', bg: 'bg-emerald-100', text: 'text-emerald-900', border: 'border-emerald-300', borderL: 'border-l-emerald-600', hex: '#059669' },
-  { name: 'Amber', bg: 'bg-amber-100', text: 'text-amber-900', border: 'border-amber-300', borderL: 'border-l-amber-600', hex: '#d97706' },
-  { name: 'Purple', bg: 'bg-purple-100', text: 'text-purple-900', border: 'border-purple-300', borderL: 'border-l-purple-600', hex: '#7c3aed' },
-  { name: 'Pink', bg: 'bg-pink-100', text: 'text-pink-900', border: 'border-pink-300', borderL: 'border-l-pink-600', hex: '#db2777' },
-  { name: 'Cyan', bg: 'bg-cyan-100', text: 'text-cyan-900', border: 'border-cyan-300', borderL: 'border-l-cyan-600', hex: '#0891b2' },
-  { name: 'Lime', bg: 'bg-lime-100', text: 'text-lime-900', border: 'border-lime-300', borderL: 'border-l-lime-600', hex: '#65a30d' },
-  { name: 'Orange', bg: 'bg-orange-100', text: 'text-orange-900', border: 'border-orange-300', borderL: 'border-l-orange-600', hex: '#ea580c' },
-  { name: 'Slate', bg: 'bg-slate-200', text: 'text-slate-800', border: 'border-slate-400', borderL: 'border-l-slate-600', hex: '#475569' },
+  { name: 'Red', bg: 'bg-red-100', text: 'text-red-900', border: 'border-red-300', borderL: 'border-l-red-600', hex: '#dc2626' }, // 0
+  { name: 'Blue', bg: 'bg-blue-100', text: 'text-blue-900', border: 'border-blue-300', borderL: 'border-l-blue-600', hex: '#2563eb' }, // 1
+  { name: 'Emerald', bg: 'bg-emerald-100', text: 'text-emerald-900', border: 'border-emerald-300', borderL: 'border-l-emerald-600', hex: '#059669' }, // 2
+  { name: 'Orange', bg: 'bg-orange-100', text: 'text-orange-900', border: 'border-orange-300', borderL: 'border-l-orange-600', hex: '#ea580c' }, // 3
+  { name: 'Purple', bg: 'bg-purple-100', text: 'text-purple-900', border: 'border-purple-300', borderL: 'border-l-purple-600', hex: '#7c3aed' }, // 4
+  { name: 'Pink', bg: 'bg-pink-100', text: 'text-pink-900', border: 'border-pink-300', borderL: 'border-l-pink-600', hex: '#db2777' }, // 5
+  { name: 'Cyan', bg: 'bg-cyan-100', text: 'text-cyan-900', border: 'border-cyan-300', borderL: 'border-l-cyan-600', hex: '#0891b2' }, // 6
+  { name: 'Lime', bg: 'bg-lime-100', text: 'text-lime-900', border: 'border-lime-300', borderL: 'border-l-lime-600', hex: '#65a30d' }, // 7
+  { name: 'Amber', bg: 'bg-amber-100', text: 'text-amber-900', border: 'border-amber-300', borderL: 'border-l-amber-600', hex: '#d97706' }, // 8
+  { name: 'Indigo', bg: 'bg-indigo-100', text: 'text-indigo-900', border: 'border-indigo-300', borderL: 'border-l-indigo-600', hex: '#4f46e5' }, // 9
+  { name: 'Teal', bg: 'bg-teal-100', text: 'text-teal-900', border: 'border-teal-300', borderL: 'border-l-teal-600', hex: '#0d9488' }, // 10
+  { name: 'Fuchsia', bg: 'bg-fuchsia-100', text: 'text-fuchsia-900', border: 'border-fuchsia-300', borderL: 'border-l-fuchsia-600', hex: '#c026d3' }, // 11
+  { name: 'Rose', bg: 'bg-rose-100', text: 'text-rose-900', border: 'border-rose-300', borderL: 'border-l-rose-600', hex: '#e11d48' }, // 12
+  { name: 'Sky', bg: 'bg-sky-100', text: 'text-sky-900', border: 'border-sky-300', borderL: 'border-l-sky-600', hex: '#0284c7' }, // 13
+  { name: 'Yellow', bg: 'bg-yellow-100', text: 'text-yellow-900', border: 'border-yellow-300', borderL: 'border-l-yellow-600', hex: '#ca8a04' }, // 14
+  { name: 'Slate', bg: 'bg-slate-200', text: 'text-slate-800', border: 'border-slate-400', borderL: 'border-l-slate-600', hex: '#475569' }, // 15
 ];
 
 const KNOWN_MAPPINGS: Record<string, number> = {
   'management': 0, // Red
-  'supervision': 0, // Red
-  'cost': 8, // Orange
-  'financial': 8,
   'organization': 1, // Blue
+  'physical environment': 2, // Emerald
+  'environment': 2,
+  'supervision': 3, // Orange - Distinct from Red
+  'legal': 4, // Purple
+  'policy': 4,
+  'legal and policy': 4, // Purple - Distinct from others
+  'personal reason': 5, // Pink
   'technology': 6, // Cyan
   'technical': 6,
-  'knowledge': 4, // Purple
-  'personal reason': 5, // Pink (Changed to Pink to distinguish from purple/knowledge if needed, or keep purple)
-  'process': 3, // Amber
-  'policy': 9, // Slate
-  'legal': 9,
-  'legal and policy': 9, // Slate
-  'environment': 2, // Emerald
-  'physical environment': 2, // Emerald
-  'safety': 7, // Lime
+  'safety': 12, // Rose - Distinct from Red
+  'process': 8, // Amber
+  'cost': 14, // Yellow
+  'financial': 14,
+  'knowledge': 9, // Indigo
+  'awareness': 9, // Indigo
 };
 
 export const getCategoryTheme = (category?: string) => {
-  if (!category) return PALETTE[9]; // Default Slate
+  if (!category) return PALETTE[15]; // Default Slate
   
   const normalizedCat = category.toLowerCase().trim();
   
+  // Check exact or partial matches in known mappings
   if (KNOWN_MAPPINGS[normalizedCat] !== undefined) {
       return PALETTE[KNOWN_MAPPINGS[normalizedCat]];
   }
 
   // Robust Hashing for unknown categories
-  // Modified to use a different prime multiplier to separate similar strings better
   let hash = 0;
   for (let i = 0; i < normalizedCat.length; i++) {
     hash = ((hash << 5) - hash) + normalizedCat.charCodeAt(i);
     hash |= 0; // Convert to 32bit integer
   }
-  // Added salt to shift distribution
-  return PALETTE[Math.abs(hash + 13) % PALETTE.length];
+  return PALETTE[Math.abs(hash) % PALETTE.length];
 };
 
 export const getCategoryColorClasses = (category?: string) => {
