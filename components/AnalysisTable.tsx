@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { ISMElement, ISMResult } from '../types';
 
@@ -18,7 +17,7 @@ const AnalysisTable: React.FC<Props> = ({ factors, result }) => {
         l.elements.forEach(idx => levelMap.set(idx, l.level));
     });
 
-    return factors.map((factor, i) => {
+    const rows = factors.map((factor, i) => {
         const reachabilitySet: number[] = [];
         const antecedentSet: number[] = [];
         
@@ -44,10 +43,18 @@ const AnalysisTable: React.FC<Props> = ({ factors, result }) => {
             level: levelMap.get(i)
         };
     });
-  }, [factors, result]);
 
-  // Sort by Level (optional, usually standard tables are sorted by ID or Level)
-  // The provided image is sorted by Barrier ID. We keep it sorted by ID.
+    // Sort by Level Ascending
+    return rows.sort((a, b) => {
+        const levelA = a.level ?? Number.MAX_VALUE;
+        const levelB = b.level ?? Number.MAX_VALUE;
+        if (levelA !== levelB) {
+            return levelA - levelB;
+        }
+        // Secondary sort by Name for consistent ordering within levels
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+    });
+  }, [factors, result]);
 
   return (
     <div className="overflow-x-auto border rounded-lg border-slate-200">

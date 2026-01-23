@@ -24,16 +24,15 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
     if (!exportRef.current) return;
 
     try {
+      const isGraph = activeTab === 'hierarchy' || activeTab === 'digraph';
+
       const canvas = await html2canvas(exportRef.current, {
         backgroundColor: '#ffffff',
-        scale: 3, // Higher resolution for crisp text when scaled
+        scale: 4, // Higher resolution for crisp text
         logging: false,
-        windowWidth: 3000, // Simulate wide window to capture full width tables/charts
+        windowWidth: 3000, 
         onclone: (clonedDoc) => {
             // 1. Inject Global Styles for Font
-            // Use Times New Roman globally for PDF consistency.
-            // We REMOVED the aggressive font-size overrides for SVGs because they break layout in fixed-size boxes.
-            // The tables (.print-content table) can handle larger fonts as they reflow.
             const style = clonedDoc.createElement('style');
             style.innerHTML = `
                 * { 
@@ -42,25 +41,29 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                 }
                 .print-content {
                     font-size: 14pt !important;
-                    padding: 40px !important;
+                    padding: 0px !important; /* Remove padding for graph full page */
+                    margin: 0px !important;
+                    border: none !important;
+                    box-shadow: none !important;
                 }
+                /* Tables */
                 .print-content table th, .print-content table td {
-                    font-size: 14pt !important;
-                    padding: 8px !important;
+                    font-size: 12pt !important; /* Slightly smaller than 14 to fit better */
+                    padding: 6px !important;
                     border-width: 1px !important;
                 }
                 .print-content h3 {
-                    font-size: 24pt !important;
+                    font-size: 18pt !important;
                     margin-bottom: 20px !important;
+                    text-align: center;
                 }
                 /* Keys and Legends */
                 .matrix-key {
-                     font-size: 12pt !important;
-                     padding: 10px !important;
+                     font-size: 10pt !important;
+                     padding: 5px !important;
                 }
-                .matrix-key span, .matrix-key div {
-                     font-size: 12pt !important;
-                }
+                /* Remove screen-only scrollbars */
+                ::-webkit-scrollbar { display: none; }
             `;
             clonedDoc.head.appendChild(style);
 
@@ -72,14 +75,21 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                 element.style.height = 'auto';
                 element.style.overflow = 'visible';
                 
+                // Remove padding/margins from container for graphs to maximize space
+                if (isGraph) {
+                    element.style.padding = '0';
+                    element.style.margin = '0';
+                }
+
                 // 3. Expand All Scrollable Areas
                 const scrollables = element.querySelectorAll('.overflow-x-auto, .overflow-auto');
                 scrollables.forEach(el => {
                     const htmlEl = el as HTMLElement;
                     htmlEl.style.overflow = 'visible';
-                    htmlEl.style.width = 'max-content'; // Force full width
+                    htmlEl.style.width = 'max-content'; 
                     htmlEl.style.maxWidth = 'none';
                     htmlEl.style.display = 'block';
+                    htmlEl.style.padding = '0'; // Remove inner padding
                 });
 
                 // 4. Ensure Keys don't wrap
@@ -99,10 +109,33 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                     htmlEl.style.textOverflow = 'clip';
                     htmlEl.style.wordBreak = 'break-word';
                 });
+
+                // 6. Hierarchy Specific Font Adjustments
+                if (activeTab === 'hierarchy') {
+                    // Adjust ID (First child div)
+                    const titleDivs = clonedDoc.querySelectorAll('#hierarchy-graph-svg .node foreignObject div:first-child');
+                    titleDivs.forEach((el) => {
+                        const div = el as HTMLElement;
+                        div.style.fontSize = '12pt'; 
+                        div.style.lineHeight = '1.1';
+                        div.style.marginBottom = '4px';
+                    });
+                    
+                    // Adjust Description (Second child div)
+                    const descDivs = clonedDoc.querySelectorAll('#hierarchy-graph-svg .node foreignObject div:nth-child(2)');
+                    descDivs.forEach((el) => {
+                        const div = el as HTMLElement;
+                        div.style.fontSize = '10.5pt';
+                        div.style.lineHeight = '1.1';
+                        div.style.webkitLineClamp = 'unset'; // Remove clamping to show all text
+                        div.style.display = 'block'; // Remove flex/box display that causes clamping
+                        div.style.height = 'auto';
+                        div.style.overflow = 'visible';
+                    });
+                }
             }
             
-            // 6. Inject style for SVGs to ensure they use Times New Roman.
-            // Do NOT force font-size here as it breaks fixed SVG layouts.
+            // 7. Inject style for SVGs
             const svgs = clonedDoc.querySelectorAll('svg');
             svgs.forEach(svg => {
                 const svgStyle = clonedDoc.createElement('style');
@@ -112,7 +145,6 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                     foreignObject div { font-family: "Times New Roman", Times, serif !important; }
                 `;
                 svg.prepend(svgStyle);
-                // Ensure SVG is fully visible
                 svg.setAttribute('width', '100%');
                 svg.style.width = '100%';
                 svg.style.maxWidth = 'none';
@@ -122,17 +154,39 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
       });
 
       const imgData = canvas.toDataURL('image/png');
+      
+      // Determine orientation based on image aspect ratio
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const orientation = imgWidth > imgHeight ? 'l' : 'p';
+      
       const pdf = new jsPDF({
-        orientation: canvas.width > canvas.height ? 'l' : 'p',
+        orientation: orientation,
         unit: 'mm',
         format: 'a4',
       });
 
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      // Margins in mm
+      const margin = 10; 
+      const maxWidth = pageWidth - (margin * 2);
+      const maxHeight = pageHeight - (margin * 2);
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      // Calculate ratio to FIT the image within margins
+      const widthRatio = maxWidth / imgWidth;
+      const heightRatio = maxHeight / imgHeight;
+      const ratio = Math.min(widthRatio, heightRatio);
+
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
+
+      // Center the image
+      const x = (pageWidth - finalWidth) / 2;
+      const y = (pageHeight - finalHeight) / 2;
+
+      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
       pdf.save(`ISM_${activeTab}_Report.pdf`);
 
     } catch (error) {
