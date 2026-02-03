@@ -1,8 +1,9 @@
 
 import React, { useState, useRef } from 'react';
 import { ISMElement, SSIMData, SSIMValue } from '../types';
-import { RotateCcw, Wand2, Save, Upload, ArrowLeft } from 'lucide-react';
+import { RotateCcw, Wand2, Save, Upload, ArrowLeft, FileSpreadsheet, Image as ImageIcon, GitCompare, X } from 'lucide-react';
 import { getCategoryTheme } from './FactorInput';
+import html2canvas from 'html2canvas';
 
 interface Props {
   factors: ISMElement[];
@@ -16,7 +17,11 @@ interface Props {
 const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) => {
   const [highlightCell, setHighlightCell] = useState<{i: string, j: string} | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [comparisonData, setComparisonData] = useState<SSIMData | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const compareInputRef = useRef<HTMLInputElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   const toggleValue = (iId: string, jId: string) => {
     const current = ssim[iId]?.[jId] || SSIMValue.O;
@@ -74,6 +79,113 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
     reader.readAsText(file);
   };
 
+  const handleCompareImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const parsedData = JSON.parse(e.target?.result as string);
+        if (typeof parsedData === 'object' && parsedData !== null) {
+            setComparisonData(parsedData);
+        } else {
+            alert("Invalid SSIM data.");
+        }
+      } catch (error) { alert("Failed to parse comparison file."); }
+      if (compareInputRef.current) compareInputRef.current.value = '';
+    };
+    reader.readAsText(file);
+  };
+
+  const clearComparison = () => {
+    setComparisonData(null);
+  };
+
+  const handleExportExcel = () => {
+    let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+    html += '<head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>SSIM Matrix</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
+    html += '<style>body, table { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 12px; } table { border-collapse: collapse; } td, th { border: 0.5pt solid #94a3b8; padding: 5px; text-align: center; vertical-align: middle; } .header { font-weight: bold; background-color: #f1f5f9; text-align: left; } .header-col { font-weight: bold; background-color: #f1f5f9; text-align: center; } .v-cell { background-color: #d1fae5; color: #065f46; font-weight: bold; } .a-cell { background-color: #fef3c7; color: #92400e; font-weight: bold; } .x-cell { background-color: #dbeafe; color: #1e40af; font-weight: bold; } .o-cell { color: #94a3b8; } .diagonal { background-color: #f1f5f9; color: #cbd5e1; } .lower { background-color: #f8fafc; } </style>';
+    html += '</head><body>';
+    
+    html += '<h3>Structural Self-Interaction Matrix (SSIM)</h3>';
+    html += '<table><thead><tr><th style="min-width:200px;">Factor i \\ j</th>';
+    factors.forEach(f => {
+        html += `<th class="header-col">${f.name}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    factors.forEach((rowFactor, i) => {
+        html += `<tr><td class="header">${rowFactor.name}: ${rowFactor.description || ''}</td>`;
+        factors.forEach((colFactor, j) => {
+            const val = ssim[rowFactor.id]?.[colFactor.id] || SSIMValue.O;
+            
+            if (i === j) {
+                html += `<td class="diagonal"></td>`;
+            } else if (j < i) {
+                html += `<td class="lower"></td>`;
+            } else {
+                 let cellClass = 'o-cell';
+                 if (val === SSIMValue.V) cellClass = 'v-cell';
+                 else if (val === SSIMValue.A) cellClass = 'a-cell';
+                 else if (val === SSIMValue.X) cellClass = 'x-cell';
+                 html += `<td class="${cellClass}">${val}</td>`;
+            }
+        });
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table>';
+    html += '<br/><div><strong>Legend:</strong> V: i->j, A: j->i, X: Mutual, O: None</div>';
+    html += '</body></html>';
+
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `SSIM_Export_${new Date().toISOString().split('T')[0]}.xls`;
+    link.click();
+  };
+
+  const handleExportImage = async () => {
+    if (!gridRef.current) return;
+    try {
+        const canvas = await html2canvas(gridRef.current, {
+            backgroundColor: '#ffffff',
+            scale: 2, // Retina quality
+            logging: false,
+            // Capture full scrollable area
+            windowWidth: gridRef.current.scrollWidth + 100,
+            windowHeight: gridRef.current.scrollHeight + 100,
+            onclone: (clonedDoc) => {
+                const element = clonedDoc.querySelector('[data-export-target="ssim-grid"]') as HTMLElement;
+                if(element) {
+                    element.style.overflow = 'visible';
+                    element.style.height = 'auto';
+                    element.style.width = 'fit-content';
+                    element.style.maxWidth = 'none';
+                    
+                    // Fix sticky positioning for capture
+                    const stickies = element.querySelectorAll('.sticky');
+                    stickies.forEach(el => {
+                        (el as HTMLElement).style.position = 'static';
+                        (el as HTMLElement).style.transform = 'none';
+                    });
+                    
+                    // Ensure table is fully visible
+                    const table = element.querySelector('table');
+                    if(table) table.style.width = '100%';
+                }
+            }
+        });
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = `SSIM_Matrix_${new Date().toISOString().split('T')[0]}.png`;
+        link.click();
+    } catch (e) {
+        console.error("Export failed", e);
+        alert("Failed to export image. Try maximizing the window.");
+    }
+  };
+
   const getCellColor = (val: SSIMValue) => {
     switch(val) {
       case SSIMValue.V: return 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200';
@@ -95,10 +207,19 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
           <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-50 border border-amber-100 text-amber-800 rounded"><span className="font-bold">A</span>: j&rarr;i</div>
           <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 border border-blue-100 text-blue-800 rounded"><span className="font-bold">X</span>: Mutual</div>
           <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-200 text-slate-500 rounded"><span className="font-bold">O</span>: None</div>
+          {comparisonData && (
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-red-50 border border-red-200 text-red-600 rounded animate-pulse">
+                <span className="font-bold">Mismatch</span>: Highlighted
+              </div>
+          )}
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto bg-white rounded-lg border border-slate-300 shadow-sm relative pb-4">
+      <div 
+        ref={gridRef} 
+        data-export-target="ssim-grid"
+        className="flex-1 overflow-auto bg-white rounded-lg border border-slate-300 shadow-sm relative pb-4"
+      >
         <table className="border-collapse w-max min-w-full table-fixed">
           <thead>
             <tr>
@@ -126,15 +247,28 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
                   const val = ssim[rowFactor.id]?.[colFactor.id] || SSIMValue.O;
                   const isHighlighted = highlightCell?.i === rowFactor.id && highlightCell?.j === colFactor.id;
 
+                  // Comparison Check
+                  let isDiff = false;
+                  let compareVal = null;
+                  if (comparisonData && !isDiagonal && !isLower) {
+                      compareVal = comparisonData[rowFactor.id]?.[colFactor.id] || SSIMValue.O;
+                      isDiff = val !== compareVal;
+                  }
+
                   if (isDiagonal) return <td key={colFactor.id} className="bg-slate-100 border border-slate-200"></td>;
                   if (isLower) return <td key={colFactor.id} onClick={() => handleLowerTriangleClick(rowFactor.id, colFactor.id, i, j)} className="bg-slate-50 border border-slate-100 cursor-pointer hover:bg-slate-200"></td>;
 
                   return (
-                    <td key={colFactor.id} className={`p-0.5 border border-slate-200 text-center ${isHighlighted ? 'bg-yellow-50' : ''}`}>
+                    <td key={colFactor.id} className={`p-0.5 border border-slate-200 text-center relative ${isHighlighted ? 'bg-yellow-50' : ''}`}>
+                        {isDiff && <div className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full -mt-0.5 -mr-0.5 z-10 pointer-events-none shadow-sm"></div>}
                         <button
                           type="button"
                           onClick={() => toggleValue(rowFactor.id, colFactor.id)}
-                          className={`w-full h-8 md:h-9 rounded-sm border font-bold text-xs md:text-sm transition-all flex items-center justify-center ${getCellColor(val)} ${isHighlighted ? 'ring-2 ring-yellow-400 ring-offset-1' : ''}`}
+                          title={isDiff ? `Current: ${val} | Comparison: ${compareVal}` : undefined}
+                          className={`w-full h-8 md:h-9 rounded-sm border font-bold text-xs md:text-sm transition-all flex items-center justify-center ${getCellColor(val)} 
+                            ${isHighlighted ? 'ring-2 ring-yellow-400 ring-offset-1' : ''}
+                            ${isDiff ? 'ring-2 ring-red-500 ring-offset-1 border-red-500' : ''}
+                          `}
                         >
                           {val}
                         </button>
@@ -159,13 +293,35 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
             <div className="hidden sm:block w-px h-8 bg-slate-300 mx-2"></div>
 
             <input type="file" ref={fileInputRef} onChange={handleImportData} accept=".json" className="hidden" />
+            <input type="file" ref={compareInputRef} onChange={handleCompareImport} accept=".json" className="hidden" />
+            
             <div className="flex bg-white rounded-md shadow-sm border border-slate-300 overflow-hidden divide-x divide-slate-200">
+                <button onClick={handleExportExcel} className="px-3 py-2 hover:bg-slate-50 text-slate-600 text-xs font-medium flex items-center gap-2">
+                   <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> Excel
+                </button>
+                <button onClick={handleExportImage} className="px-3 py-2 hover:bg-slate-50 text-slate-600 text-xs font-medium flex items-center gap-2">
+                   <ImageIcon className="w-4 h-4 text-indigo-600" /> Img
+                </button>
                 <button onClick={handleExportData} className="px-3 py-2 hover:bg-slate-50 text-slate-600 text-xs font-medium flex items-center gap-2">
-                   <Save className="w-4 h-4" /> Save
+                   <Save className="w-4 h-4 text-slate-600" /> Save
                 </button>
                 <button onClick={() => fileInputRef.current?.click()} className="px-3 py-2 hover:bg-slate-50 text-slate-600 text-xs font-medium flex items-center gap-2">
-                   <Upload className="w-4 h-4" /> Load
+                   <Upload className="w-4 h-4 text-slate-600" /> Load
                 </button>
+            </div>
+
+            <div className="hidden sm:block w-px h-8 bg-slate-300 mx-2"></div>
+
+            <div className="flex bg-white rounded-md shadow-sm border border-slate-300 overflow-hidden divide-x divide-slate-200">
+                {comparisonData ? (
+                     <button onClick={clearComparison} className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-medium flex items-center gap-2 border-l border-red-200">
+                        <X className="w-4 h-4" /> Stop Compare
+                    </button>
+                ) : (
+                    <button onClick={() => compareInputRef.current?.click()} className="px-3 py-2 hover:bg-purple-50 text-slate-600 hover:text-purple-700 text-xs font-medium flex items-center gap-2 transition-colors">
+                        <GitCompare className="w-4 h-4" /> Compare
+                    </button>
+                )}
             </div>
         </div>
         
@@ -178,3 +334,4 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
 };
 
 export default SSIMGrid;
+        
