@@ -21,7 +21,7 @@ interface GroupedPoint {
   dependencePower: number;
   drivingPower: number;
   factors: MicmacDataPoint[];
-  label: string;
+  labels: string[];
 }
 
 const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
@@ -58,11 +58,24 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
 
     return Array.from(map.entries()).map(([key, points]) => {
         const [dep, drv] = key.split('-').map(Number);
+        
+        // Split logic: if more than 3 factors, split into two lines
+        const names = points.map(p => p.name);
+        let labels: string[] = [];
+        
+        if (names.length > 3) {
+            const mid = Math.ceil(names.length / 2);
+            labels.push(names.slice(0, mid).join(', ') + ',');
+            labels.push(names.slice(mid).join(', '));
+        } else {
+            labels.push(names.join(', '));
+        }
+
         return {
             dependencePower: dep,
             drivingPower: drv,
             factors: points,
-            label: points.map(p => p.name).join(', ')
+            labels: labels
         };
     });
   }, [rawData]);
@@ -98,10 +111,11 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
 
     // Use a fixed width or responsive logic
     const containerWidth = containerRef.current.clientWidth;
-    const width = Math.max(containerWidth, 600); // Min width 600px
-    const height = 500;
-    // Increased margins to prevent clipping of axis labels and extreme points
-    const margin = { top: 60, right: 100, bottom: 60, left: 60 };
+    const width = Math.max(containerWidth, 800); 
+    const height = 700; 
+    
+    // Margins
+    const margin = { top: 80, right: 150, bottom: 100, left: 100 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
@@ -119,10 +133,8 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Scales
-    // Max value is number of factors (N)
     const maxVal = factors.length;
     
-    // Adjusted domains to add a small buffer so points aren't cut off on the edge
     const xScale = d3.scaleLinear()
       .domain([0, maxVal + 1]) 
       .range([0, innerWidth]);
@@ -137,40 +149,40 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
 
     // --- Background Shading for Quadrants ---
     
-    // IV. Driver (Top Left): High Drive, Low Dep
+    // IV. Driver (Top Left)
     g.append("rect")
       .attr("x", 0)
       .attr("y", 0)
       .attr("width", splitX)
       .attr("height", splitY)
-      .attr("fill", "#fff1f2") // Rose-50
+      .attr("fill", "#fff1f2")
       .attr("opacity", 0.6);
 
-    // III. Linkage (Top Right): High Drive, High Dep
+    // III. Linkage (Top Right)
     g.append("rect")
       .attr("x", splitX)
       .attr("y", 0)
       .attr("width", innerWidth - splitX)
       .attr("height", splitY)
-      .attr("fill", "#faf5ff") // Purple-50
+      .attr("fill", "#faf5ff")
       .attr("opacity", 0.6);
 
-    // I. Autonomous (Bottom Left): Low Drive, Low Dep
+    // I. Autonomous (Bottom Left)
     g.append("rect")
       .attr("x", 0)
       .attr("y", splitY)
       .attr("width", splitX)
       .attr("height", innerHeight - splitY)
-      .attr("fill", "#ecfdf5") // Emerald-50
+      .attr("fill", "#ecfdf5")
       .attr("opacity", 0.6);
 
-    // II. Dependent (Bottom Right): Low Drive, High Dep
+    // II. Dependent (Bottom Right)
     g.append("rect")
       .attr("x", splitX)
       .attr("y", splitY)
       .attr("width", innerWidth - splitX)
       .attr("height", innerHeight - splitY)
-      .attr("fill", "#fffbeb") // Amber-50
+      .attr("fill", "#fffbeb")
       .attr("opacity", 0.6);
 
 
@@ -190,19 +202,31 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
       .call(makeYGrid().tickSize(-innerWidth).tickFormat(() => ""));
 
     // Axes
-    g.append("g")
-      .attr("transform", `translate(0,${innerHeight})`)
-      .call(d3.axisBottom(xScale));
+    const xAxis = d3.axisBottom(xScale).ticks(maxVal + 1).tickFormat(d3.format("d"));
+    const yAxis = d3.axisLeft(yScale).ticks(maxVal + 1).tickFormat(d3.format("d"));
 
     g.append("g")
-      .call(d3.axisLeft(yScale));
+      .attr("transform", `translate(0,${innerHeight})`)
+      .call(xAxis)
+      .selectAll("text")
+      .attr("font-family", '"Times New Roman", Times, serif')
+      .attr("font-size", "16px") 
+      .attr("font-weight", "bold");
+
+    g.append("g")
+      .call(yAxis)
+      .selectAll("text")
+      .attr("font-family", '"Times New Roman", Times, serif')
+      .attr("font-size", "16px") 
+      .attr("font-weight", "bold");
 
     // Axis Labels
     svg.append("text")
       .attr("x", width / 2)
-      .attr("y", height - 15)
+      .attr("y", height - 20)
       .attr("text-anchor", "middle")
       .attr("font-weight", "bold")
+      .attr("font-size", "24px")
       .attr("font-family", "Times New Roman, Times, serif")
       .attr("fill", "#334155")
       .text("Dependence Power");
@@ -210,14 +234,15 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
     svg.append("text")
       .attr("transform", "rotate(-90)")
       .attr("x", -height / 2)
-      .attr("y", 20)
+      .attr("y", 30)
       .attr("text-anchor", "middle")
       .attr("font-weight", "bold")
+      .attr("font-size", "24px")
       .attr("font-family", "Times New Roman, Times, serif")
       .attr("fill", "#334155")
       .text("Driving Power");
 
-    // Quadrant Separator Lines (The Crosshair)
+    // Quadrant Separator Lines
     g.append("line")
       .attr("x1", splitX)
       .attr("y1", 0)
@@ -236,21 +261,20 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
       .attr("stroke-width", 2)
       .attr("stroke-dasharray", "4");
 
-    // Quadrant Labels
-    const labelPadding = 10;
+    // Quadrant Labels - Fixed positions
+    const labelPadding = 15;
+    const quadFontSize = "16px"; 
     
-    // IV: Driver (Top Left)
     g.append("text")
        .attr("x", labelPadding)
        .attr("y", labelPadding)
        .attr("dominant-baseline", "hanging")
        .attr("font-weight", "bold")
        .attr("font-family", "Times New Roman, Times, serif")
-       .attr("fill", "#dc2626") // Red-600
-       .style("font-size", "14px")
+       .attr("fill", "#dc2626")
+       .style("font-size", quadFontSize)
        .text("IV. Driver (Independent)");
 
-    // III: Linkage (Top Right)
     g.append("text")
        .attr("x", innerWidth - labelPadding)
        .attr("y", labelPadding)
@@ -258,22 +282,20 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
        .attr("dominant-baseline", "hanging")
        .attr("font-weight", "bold")
        .attr("font-family", "Times New Roman, Times, serif")
-       .attr("fill", "#7e22ce") // Purple-700
-       .style("font-size", "14px")
+       .attr("fill", "#7e22ce")
+       .style("font-size", quadFontSize)
        .text("III. Linkage");
 
-    // I: Autonomous (Bottom Left)
     g.append("text")
        .attr("x", labelPadding)
        .attr("y", innerHeight - labelPadding)
        .attr("dominant-baseline", "auto")
        .attr("font-weight", "bold")
        .attr("font-family", "Times New Roman, Times, serif")
-       .attr("fill", "#047857") // Emerald-700
-       .style("font-size", "14px")
+       .attr("fill", "#047857")
+       .style("font-size", quadFontSize)
        .text("I. Autonomous");
 
-    // II: Dependent (Bottom Right)
     g.append("text")
        .attr("x", innerWidth - labelPadding)
        .attr("y", innerHeight - labelPadding)
@@ -281,25 +303,24 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
        .attr("dominant-baseline", "auto")
        .attr("font-weight", "bold")
        .attr("font-family", "Times New Roman, Times, serif")
-       .attr("fill", "#b45309") // Amber-700
-       .style("font-size", "14px")
+       .attr("fill", "#b45309")
+       .style("font-size", quadFontSize)
        .text("II. Dependent");
 
 
     // --- Label Simulation for Overlap Prevention ---
     
-    // Create nodes for simulation from groupedData
-    // We determine preferred X/Y and side (left/right)
     const labelNodes = groupedData.map(d => {
         const isRightSide = d.dependencePower > maxVal / 2;
-        const offset = d.factors.length > 1 ? 12 : 8;
+        // Reduced offset to bring words closer to dots
+        const offset = d.factors.length > 1 ? 12 : 10; 
         const originX = xScale(d.dependencePower);
         const originY = yScale(d.drivingPower);
         
         return {
             ...d,
             x: originX + (isRightSide ? -offset : offset), // Initial guess
-            y: originY + 4,
+            y: originY + 5,
             originX: originX,
             originY: originY,
             isRightSide: isRightSide,
@@ -307,19 +328,56 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
         };
     });
 
-    // Run simulation to space out labels
-    // We primarily want to avoid vertical overlap (Y) since we have horizontal space
-    const simulation = d3.forceSimulation(labelNodes as any)
-        .force("x", d3.forceX((d: any) => d.targetX).strength(1)) // Stick to target side
-        .force("y", d3.forceY((d: any) => d.originY).strength(0.1)) // Weakly stay at correct Y
-        .force("collide", d3.forceCollide(10)) // Prevent overlap (radius ~ half line height)
+    // Create a chain of dummy nodes to form a barrier over the quadrant titles
+    // This pushes data labels away from the text
+    const collisionRadius = 30;
+    
+    // IV. Driver (Top Left)
+    const q1Nodes = [
+        { fx: 50, fy: 20, r: collisionRadius },
+        { fx: 110, fy: 20, r: collisionRadius },
+        { fx: 170, fy: 20, r: collisionRadius },
+        { fx: 230, fy: 20, r: collisionRadius }
+    ];
+    
+    // III. Linkage (Top Right)
+    const q2Nodes = [
+        { fx: innerWidth - 50, fy: 20, r: collisionRadius },
+        { fx: innerWidth - 110, fy: 20, r: collisionRadius }
+    ];
+
+    // I. Autonomous (Bottom Left)
+    const q3Nodes = [
+        { fx: 50, fy: innerHeight - 20, r: collisionRadius },
+        { fx: 110, fy: innerHeight - 20, r: collisionRadius },
+        { fx: 170, fy: innerHeight - 20, r: collisionRadius }
+    ];
+
+    // II. Dependent (Bottom Right)
+    const q4Nodes = [
+        { fx: innerWidth - 50, fy: innerHeight - 20, r: collisionRadius },
+        { fx: innerWidth - 110, fy: innerHeight - 20, r: collisionRadius },
+        { fx: innerWidth - 170, fy: innerHeight - 20, r: collisionRadius }
+    ];
+
+    const simulationNodes = [...labelNodes, ...q1Nodes, ...q2Nodes, ...q3Nodes, ...q4Nodes] as any[];
+
+    // Run simulation
+    const simulation = d3.forceSimulation(simulationNodes)
+        .force("x", d3.forceX((d: any) => d.targetX ? d.targetX : 0).strength((d: any) => d.fx ? 0 : 2)) // Increased X strength to keep labels closer
+        .force("y", d3.forceY((d: any) => d.originY ? d.originY : 0).strength((d: any) => d.fx ? 0 : 0.1)) // Weakly stay at correct Y
+        .force("collide", d3.forceCollide((d: any) => {
+             // Radius for collision
+             if (d.r) return d.r * 1.1; // Fixed node radius buffer
+             // Data label radius - Reduced to allow tighter packing
+             return 18; 
+        }).iterations(4))
         .stop();
 
-    // Iterate simulation
-    for (let i = 0; i < 50; ++i) simulation.tick();
+    for (let i = 0; i < 150; ++i) simulation.tick();
 
 
-    // Plot Points using GROUPED Data
+    // Plot Points
     const tooltip = d3.select(containerRef.current)
       .append("div")
       .style("position", "absolute")
@@ -328,10 +386,10 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
       .style("color", "white")
       .style("padding", "8px 12px")
       .style("border-radius", "6px")
-      .style("font-size", "12px")
+      .style("font-size", "14px")
       .style("pointer-events", "none")
       .style("z-index", "10")
-      .style("max-width", "250px")
+      .style("max-width", "300px")
       .style("box-shadow", "0 4px 6px rgba(0,0,0,0.3)");
 
     g.selectAll(".dot-group")
@@ -341,14 +399,13 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
       .attr("class", "dot-group")
       .attr("cx", d => xScale(d.dependencePower))
       .attr("cy", d => yScale(d.drivingPower))
-      .attr("r", d => d.factors.length > 1 ? 8 : 6)
-      // Uniform color (Dark Slate) instead of category color
+      .attr("r", d => d.factors.length > 1 ? 10 : 8)
       .attr("fill", "#1e293b") 
       .attr("stroke", "#fff")
       .attr("stroke-width", 2)
       .attr("cursor", "pointer")
       .on("mouseover", function(event, d) {
-          d3.select(this).attr("r", d.factors.length > 1 ? 10 : 8).attr("fill", "#000");
+          d3.select(this).attr("r", d.factors.length > 1 ? 12 : 10).attr("fill", "#000");
           
           let tooltipHtml = `<strong>Dr: ${d.drivingPower}, Dep: ${d.dependencePower}</strong><hr style="margin:4px 0; border-color:#555"/>`;
           d.factors.forEach(f => {
@@ -363,26 +420,41 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
           const [mx, my] = d3.pointer(event, containerRef.current);
           tooltip
             .style("top", (my - 10) + "px")
-            .style("left", (mx + 15) + "px");
+            .style("left", (mx + 20) + "px");
       })
       .on("mouseout", function(event, d) {
-          d3.select(this).attr("r", d.factors.length > 1 ? 8 : 6).attr("fill", "#1e293b");
+          d3.select(this).attr("r", d.factors.length > 1 ? 10 : 8).attr("fill", "#1e293b");
           tooltip.style("visibility", "hidden");
       });
 
-    // Labels next to points (Using Simulated Positions)
-    g.selectAll(".label")
+    // Labels next to points
+    const textLabels = g.selectAll(".label")
       .data(labelNodes)
       .enter()
       .append("text")
-      .attr("x", (d: any) => d.x)
-      .attr("y", (d: any) => d.y)
+      .attr("x", (d: any) => {
+          return Math.max(10, Math.min(innerWidth - 10, d.x));
+      })
+      .attr("y", (d: any) => {
+           return Math.max(10, Math.min(innerHeight - 5, d.y));
+      })
       .attr("text-anchor", (d: any) => d.isRightSide ? "end" : "start")
-      .text((d: any) => d.label)
-      .attr("font-size", "10px")
+      .attr("font-size", "18px")
       .attr("font-weight", "bold")
       .attr("font-family", "Times New Roman, Times, serif")
       .attr("fill", "#1e293b");
+    
+    // Add multi-line tspans
+    textLabels.each(function(d: any) {
+        const el = d3.select(this);
+        const xPos = Math.max(10, Math.min(innerWidth - 10, d.x));
+        d.labels.forEach((line: string, i: number) => {
+            el.append("tspan")
+               .attr("x", xPos)
+               .attr("dy", i === 0 ? 0 : "1.1em")
+               .text(line);
+        });
+    });
 
     return () => {
         tooltip.remove();
