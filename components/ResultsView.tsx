@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { ISMResult, ISMElement } from '../types';
 import HierarchyGraph from './HierarchyGraph';
@@ -19,143 +20,219 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
   // Default to Initial Reachability Matrix ('irm')
   const [activeTab, setActiveTab] = useState<'hierarchy' | 'digraph' | 'micmac' | 'analysis' | 'irm' | 'frm'>('irm');
   const exportRef = useRef<HTMLDivElement>(null);
+  const printHierarchyRef = useRef<HTMLDivElement>(null);
+
+  const applyCloneTransformations = (clonedDoc: Document, isGraph: boolean) => {
+        // 1. Inject Global Styles for Font and Layout
+        const style = clonedDoc.createElement('style');
+        style.innerHTML = `
+            * { 
+                font-family: "Times New Roman", Times, serif !important; 
+                -webkit-font-smoothing: antialiased;
+            }
+            .print-content {
+                font-size: 20pt !important; /* Enlarged Text for Tables/General */
+                padding: 40px !important;
+                color: #000000 !important;
+            }
+            /* Reset Containers */
+            .print-content > div {
+                 overflow: visible !important;
+                 height: auto !important;
+                 width: auto !important;
+                 max-width: none !important;
+            }
+            /* Tables */
+            .print-content table {
+                width: 100% !important;
+                table-layout: auto !important;
+                border-collapse: collapse !important;
+            }
+            .print-content table th, .print-content table td {
+                font-size: 18pt !important; /* Enlarged Table Text */
+                padding: 14px !important;
+                border: 1px solid #000 !important;
+                white-space: normal !important; 
+                height: auto !important;
+            }
+            .print-content h3 {
+                font-size: 30pt !important; /* Enlarged Headers */
+                margin-bottom: 30px !important;
+                text-align: center;
+                font-weight: bold !important;
+                color: #000 !important;
+            }
+            
+            /* Matrix Keys */
+            .matrix-key {
+                font-size: 18pt !important;
+                padding: 20px !important;
+                margin-bottom: 30px !important;
+                border: 1px solid #ccc !important;
+                gap: 40px !important;
+                background: #f8fafc !important;
+                white-space: normal !important; 
+                display: flex !important;
+                flex-wrap: wrap !important;
+                width: 100% !important;
+                height: auto !important;
+                font-family: "Times New Roman", Times, serif !important;
+            }
+            .matrix-key span {
+                min-width: 50px !important;
+                height: 50px !important;
+                font-size: 18pt !important;
+                line-height: 50px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+            
+            /* HTML Legends for Digraph */
+            .graph-legend-container {
+                margin-top: 50px !important;
+                padding: 20px !important;
+            }
+            .graph-legend-title {
+                font-size: 28pt !important;
+                margin-bottom: 30px !important;
+            }
+            .graph-legend-item {
+                margin-right: 50px !important;
+                margin-bottom: 25px !important;
+            }
+            .graph-legend-item span {
+                font-size: 22pt !important;
+            }
+            
+            /* MICMAC Description Boxes - ENLARGED */
+            .micmac-description-box {
+                margin-bottom: 20px !important;
+                border-width: 2px !important;
+            }
+            .micmac-description-box h4 {
+                font-size: 24pt !important;
+                margin-bottom: 15px !important;
+            }
+            .micmac-description-box p {
+                font-size: 18pt !important;
+                margin-bottom: 20px !important;
+            }
+            .micmac-description-box ul li {
+                font-size: 18pt !important;
+                margin-bottom: 8px !important;
+                display: flex !important;
+                align-items: flex-start !important;
+            }
+            .micmac-description-box ul li span.font-bold {
+                font-size: 18pt !important;
+                min-width: 60px !important;
+                margin-right: 15px !important;
+                padding: 2px 8px !important;
+            }
+            .micmac-description-box .count {
+                font-size: 18pt !important;
+                margin-top: 20px !important;
+            }
+
+            ::-webkit-scrollbar { display: none; }
+        `;
+        clonedDoc.head.appendChild(style);
+
+        // 2. Expand Scrollables
+        const element = clonedDoc.querySelector('.print-content') as HTMLElement;
+        if (element) {
+            element.style.width = 'fit-content';
+            element.style.minWidth = '100%';
+            element.style.height = 'auto';
+            element.style.overflow = 'visible';
+            
+            if (isGraph) {
+                element.style.padding = '20px';
+                element.style.margin = '0';
+            }
+
+            const scrollables = element.querySelectorAll('.overflow-x-auto, .overflow-auto');
+            scrollables.forEach(el => {
+                const htmlEl = el as HTMLElement;
+                htmlEl.style.overflow = 'visible';
+                htmlEl.style.width = 'max-content'; 
+                htmlEl.style.maxWidth = 'none';
+                htmlEl.style.display = 'block';
+                htmlEl.style.padding = '0';
+            });
+            
+            const truncated = clonedDoc.querySelectorAll('.truncate');
+            truncated.forEach(el => {
+                el.classList.remove('truncate');
+                const htmlEl = el as HTMLElement;
+                htmlEl.style.whiteSpace = 'normal';
+                htmlEl.style.overflow = 'visible';
+                htmlEl.style.textOverflow = 'clip';
+                htmlEl.style.wordBreak = 'break-word';
+            });
+            
+            const nowrap = clonedDoc.querySelectorAll('.whitespace-nowrap');
+            nowrap.forEach(el => {
+                if(el.classList.contains('matrix-key') || el.closest('.matrix-key')) {
+                    el.classList.remove('whitespace-nowrap');
+                }
+            });
+        }
+
+        // 3. Inject Font Family for SVGs (Digraph only)
+        const svgs = clonedDoc.querySelectorAll('svg');
+        svgs.forEach(svg => {
+            if (svg.id === 'hierarchy-graph-svg') return; 
+
+            const svgStyle = clonedDoc.createElement('style');
+            svgStyle.innerHTML = `
+                text { font-family: "Times New Roman", Times, serif !important; }
+            `;
+            svg.prepend(svgStyle);
+            svg.setAttribute('width', '100%');
+            svg.style.width = '100%';
+            svg.style.maxWidth = 'none';
+            svg.style.overflow = 'visible';
+
+            const textEls = svg.querySelectorAll('text');
+            textEls.forEach(text => {
+                if (!text.closest('.node')) {
+                    text.style.fontSize = '20pt'; // Enlarged SVG Text
+                    text.style.fontWeight = 'bold';
+                }
+            });
+        });
+  };
 
   const handleDownloadPDF = async () => {
     if (!exportRef.current) return;
 
     try {
-      const isGraph = activeTab === 'hierarchy' || activeTab === 'digraph';
-
-      const canvas = await html2canvas(exportRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 4, // Higher resolution for crisp text
-        logging: false,
-        windowWidth: 3000, 
-        onclone: (clonedDoc) => {
-            // 1. Inject Global Styles for Font
-            const style = clonedDoc.createElement('style');
-            style.innerHTML = `
-                * { 
-                    font-family: "Times New Roman", Times, serif !important; 
-                    -webkit-font-smoothing: antialiased;
-                }
-                .print-content {
-                    font-size: 14pt !important;
-                    padding: 0px !important; /* Remove padding for graph full page */
-                    margin: 0px !important;
-                    border: none !important;
-                    box-shadow: none !important;
-                }
-                /* Tables */
-                .print-content table th, .print-content table td {
-                    font-size: 12pt !important; /* Slightly smaller than 14 to fit better */
-                    padding: 6px !important;
-                    border-width: 1px !important;
-                }
-                .print-content h3 {
-                    font-size: 18pt !important;
-                    margin-bottom: 20px !important;
-                    text-align: center;
-                }
-                /* Keys and Legends */
-                .matrix-key {
-                     font-size: 10pt !important;
-                     padding: 5px !important;
-                }
-                /* Remove screen-only scrollbars */
-                ::-webkit-scrollbar { display: none; }
-            `;
-            clonedDoc.head.appendChild(style);
-
-            // 2. Prepare Main Container
-            const element = clonedDoc.querySelector('.print-content') as HTMLElement;
-            if (element) {
-                element.style.width = 'fit-content';
-                element.style.minWidth = '100%';
-                element.style.height = 'auto';
-                element.style.overflow = 'visible';
-                
-                // Remove padding/margins from container for graphs to maximize space
-                if (isGraph) {
-                    element.style.padding = '0';
-                    element.style.margin = '0';
-                }
-
-                // 3. Expand All Scrollable Areas
-                const scrollables = element.querySelectorAll('.overflow-x-auto, .overflow-auto');
-                scrollables.forEach(el => {
-                    const htmlEl = el as HTMLElement;
-                    htmlEl.style.overflow = 'visible';
-                    htmlEl.style.width = 'max-content'; 
-                    htmlEl.style.maxWidth = 'none';
-                    htmlEl.style.display = 'block';
-                    htmlEl.style.padding = '0'; // Remove inner padding
-                });
-
-                // 4. Ensure Keys don't wrap
-                const keys = element.querySelectorAll('.matrix-key');
-                keys.forEach(el => {
-                   (el as HTMLElement).style.whiteSpace = 'nowrap';
-                   (el as HTMLElement).style.width = 'max-content';
-                });
-
-                // 5. Expand truncated text
-                const truncated = clonedDoc.querySelectorAll('.truncate');
-                truncated.forEach(el => {
-                    el.classList.remove('truncate');
-                    const htmlEl = el as HTMLElement;
-                    htmlEl.style.whiteSpace = 'normal';
-                    htmlEl.style.overflow = 'visible';
-                    htmlEl.style.textOverflow = 'clip';
-                    htmlEl.style.wordBreak = 'break-word';
-                });
-
-                // 6. Hierarchy Specific Font Adjustments
-                if (activeTab === 'hierarchy') {
-                    // Adjust ID (First child div)
-                    const titleDivs = clonedDoc.querySelectorAll('#hierarchy-graph-svg .node foreignObject div:first-child');
-                    titleDivs.forEach((el) => {
-                        const div = el as HTMLElement;
-                        div.style.fontSize = '12pt'; 
-                        div.style.lineHeight = '1.1';
-                        div.style.marginBottom = '4px';
-                    });
-                    
-                    // Adjust Description (Second child div)
-                    const descDivs = clonedDoc.querySelectorAll('#hierarchy-graph-svg .node foreignObject div:nth-child(2)');
-                    descDivs.forEach((el) => {
-                        const div = el as HTMLElement;
-                        div.style.fontSize = '10.5pt';
-                        div.style.lineHeight = '1.1';
-                        div.style.webkitLineClamp = 'unset'; // Remove clamping to show all text
-                        div.style.display = 'block'; // Remove flex/box display that causes clamping
-                        div.style.height = 'auto';
-                        div.style.overflow = 'visible';
-                    });
-                }
-            }
-            
-            // 7. Inject style for SVGs
-            const svgs = clonedDoc.querySelectorAll('svg');
-            svgs.forEach(svg => {
-                const svgStyle = clonedDoc.createElement('style');
-                svgStyle.innerHTML = `
-                    text { font-family: "Times New Roman", Times, serif !important; }
-                    .node text { font-family: "Times New Roman", Times, serif !important; }
-                    foreignObject div { font-family: "Times New Roman", Times, serif !important; }
-                `;
-                svg.prepend(svgStyle);
-                svg.setAttribute('width', '100%');
-                svg.style.width = '100%';
-                svg.style.maxWidth = 'none';
-                svg.style.overflow = 'visible';
-            });
-        }
-      });
+      let canvas: HTMLCanvasElement;
+      
+      // Special handling for Hierarchy
+      if (activeTab === 'hierarchy' && printHierarchyRef.current) {
+         canvas = await html2canvas(printHierarchyRef.current, {
+            backgroundColor: '#ffffff',
+            scale: 2, 
+            logging: false,
+            // Ensure we capture everything by allowing width to expand
+            windowWidth: printHierarchyRef.current.scrollWidth + 200, 
+            width: printHierarchyRef.current.scrollWidth + 50,
+         });
+      } else {
+         const isGraph = activeTab === 'digraph';
+         canvas = await html2canvas(exportRef.current, {
+            backgroundColor: '#ffffff',
+            scale: 4, 
+            logging: false,
+            windowWidth: 3000, 
+            onclone: (doc) => applyCloneTransformations(doc, isGraph)
+         });
+      }
 
       const imgData = canvas.toDataURL('image/png');
-      
-      // Determine orientation based on image aspect ratio
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
       const orientation = imgWidth > imgHeight ? 'l' : 'p';
@@ -169,12 +246,10 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       
-      // Margins in mm
       const margin = 10; 
       const maxWidth = pageWidth - (margin * 2);
       const maxHeight = pageHeight - (margin * 2);
 
-      // Calculate ratio to FIT the image within margins
       const widthRatio = maxWidth / imgWidth;
       const heightRatio = maxHeight / imgHeight;
       const ratio = Math.min(widthRatio, heightRatio);
@@ -182,7 +257,6 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
       const finalWidth = imgWidth * ratio;
       const finalHeight = imgHeight * ratio;
 
-      // Center the image
       const x = (pageWidth - finalWidth) / 2;
       const y = (pageHeight - finalHeight) / 2;
 
@@ -196,152 +270,37 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
   };
 
   const handleDownloadPNG = async () => {
-    // Method 1: SVG Serializer (Best for pure SVG Graphs like Hierarchy/Digraph)
-    if (activeTab === 'digraph' || activeTab === 'hierarchy') {
-        let svgId = '';
-        if (activeTab === 'digraph') svgId = 'interrelationship-graph-svg';
-        else if (activeTab === 'hierarchy') svgId = 'hierarchy-graph-svg';
+     try {
+        let canvas: HTMLCanvasElement;
         
-        const svgElement = document.getElementById(svgId) as unknown as SVGSVGElement;
-        if (svgElement) {
-            // Clone the SVG node to manipulate it safely without affecting the live DOM
-            const clone = svgElement.cloneNode(true) as SVGSVGElement;
-            
-            // Inject Times New Roman style
-            const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
-            style.textContent = `
-                text { font-family: "Times New Roman", Times, serif !important; }
-                .node text { font-family: "Times New Roman", Times, serif !important; }
-                foreignObject div { font-family: "Times New Roman", Times, serif !important; }
-            `;
-            clone.prepend(style);
-
-            const serializer = new XMLSerializer();
-            const svgString = serializer.serializeToString(clone);
-
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Use viewBox for true dimensions to avoid clipping if container is smaller
-            const vbWidth = svgElement.viewBox.baseVal.width;
-            const vbHeight = svgElement.viewBox.baseVal.height;
-            
-            const scale = 3; // High resolution
-            const padding = 50; // Add white padding around the image
-            
-            canvas.width = (vbWidth + padding * 2) * scale;
-            canvas.height = (vbHeight + padding * 2) * scale;
-            
-            if (ctx) {
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                const img = new Image();
-                img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
-                img.onload = () => {
-                    // Draw image centered with padding
-                    ctx.drawImage(img, padding * scale, padding * scale, vbWidth * scale, vbHeight * scale);
-                    const link = document.createElement('a');
-                    link.href = canvas.toDataURL('image/png');
-                    link.download = `ISM_${activeTab === 'digraph' ? 'Digraph' : 'Hierarchy'}.png`;
-                    link.click();
-                };
-            }
-            return;
-        }
-    }
-
-    // Method 2: html2canvas (For Mixed HTML/SVG content like Tables, MICMAC)
-    if (exportRef.current) {
-        try {
-            const canvas = await html2canvas(exportRef.current, {
+        if (activeTab === 'hierarchy' && printHierarchyRef.current) {
+            canvas = await html2canvas(printHierarchyRef.current, {
                 backgroundColor: '#ffffff',
-                scale: 3, // High resolution
+                scale: 2, 
                 logging: false,
-                windowWidth: 3000, // Simulate wide window
-                onclone: (clonedDoc) => {
-                    // 1. Inject Global Styles for Font
-                    const style = clonedDoc.createElement('style');
-                    style.innerHTML = `
-                        * { 
-                            font-family: "Times New Roman", Times, serif !important; 
-                            -webkit-font-smoothing: antialiased;
-                        }
-                        .print-content {
-                            font-size: 14pt !important;
-                            padding: 40px !important;
-                        }
-                        .print-content table th, .print-content table td {
-                            font-size: 14pt !important;
-                            padding: 8px !important;
-                        }
-                        .print-content h3 {
-                            font-size: 24pt !important;
-                        }
-                    `;
-                    clonedDoc.head.appendChild(style);
-
-                    // 2. Prepare Main Container
-                    const element = clonedDoc.querySelector('.print-content') as HTMLElement;
-                    if (element) {
-                        element.style.width = 'fit-content';
-                        element.style.minWidth = '100%';
-                        element.style.height = 'auto';
-                        element.style.overflow = 'visible';
-                        
-                        // 3. Expand All Scrollable Areas
-                        const scrollables = element.querySelectorAll('.overflow-x-auto, .overflow-auto');
-                        scrollables.forEach(el => {
-                            const htmlEl = el as HTMLElement;
-                            htmlEl.style.overflow = 'visible';
-                            htmlEl.style.width = 'max-content'; // Force full width
-                            htmlEl.style.maxWidth = 'none';
-                            htmlEl.style.display = 'block';
-                        });
-
-                        // 4. Ensure Keys don't wrap
-                        const keys = element.querySelectorAll('.matrix-key');
-                        keys.forEach(el => {
-                           (el as HTMLElement).style.whiteSpace = 'nowrap';
-                           (el as HTMLElement).style.width = 'max-content';
-                        });
-
-                        // 5. Expand truncated text
-                        const truncated = clonedDoc.querySelectorAll('.truncate');
-                        truncated.forEach(el => {
-                            el.classList.remove('truncate');
-                            const htmlEl = el as HTMLElement;
-                            htmlEl.style.whiteSpace = 'normal';
-                            htmlEl.style.overflow = 'visible';
-                            htmlEl.style.textOverflow = 'clip';
-                            htmlEl.style.wordBreak = 'break-word';
-                        });
-                    }
-                    
-                    // 6. Inject style for SVGs (like Micmac)
-                    const svgs = clonedDoc.querySelectorAll('svg');
-                    svgs.forEach(svg => {
-                        const svgStyle = clonedDoc.createElement('style');
-                        svgStyle.innerHTML = `
-                            text { font-family: "Times New Roman", Times, serif !important; }
-                            foreignObject div { font-family: "Times New Roman", Times, serif !important; }
-                        `;
-                        svg.prepend(svgStyle);
-                        svg.setAttribute('width', '100%');
-                        svg.style.width = '100%';
-                        svg.style.maxWidth = 'none';
-                        svg.style.overflow = 'visible';
-                    });
-                }
+                // Adjust width to fit content dynamically
+                windowWidth: printHierarchyRef.current.scrollWidth + 200, 
+                width: printHierarchyRef.current.scrollWidth + 50,
             });
-            const link = document.createElement('a');
-            link.href = canvas.toDataURL('image/png');
-            link.download = `ISM_${activeTab}_Result.png`;
-            link.click();
-        } catch (error) {
-            console.error("Export failed:", error);
-            alert("Failed to generate image.");
+        } else {
+            if (!exportRef.current) return;
+            const isGraph = activeTab === 'digraph';
+            canvas = await html2canvas(exportRef.current, {
+                backgroundColor: '#ffffff',
+                scale: 4, 
+                logging: false,
+                windowWidth: 3000, 
+                onclone: (doc) => applyCloneTransformations(doc, isGraph)
+            });
         }
+
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = `ISM_${activeTab}_Result.png`;
+        link.click();
+    } catch (error) {
+        console.error("Export failed:", error);
+        alert("Failed to generate image.");
     }
   };
 
@@ -360,8 +319,7 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
     });
 
     excelContent += '</x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
-    // Add Times New Roman style for Excel
-    excelContent += '<style>body, table { font-family: "Times New Roman", Times, serif; }</style>';
+    excelContent += '<style>body, table { font-family: "Times New Roman", Times, serif; font-size: 12pt; }</style>';
     excelContent += '</head><body>';
 
     sheets.forEach(sheet => {
@@ -445,18 +403,27 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
 
   const renderSimpleMatrix = (matrix: number[][]) => (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-4 text-xs bg-slate-50 p-3 rounded border border-slate-200 matrix-key whitespace-nowrap">
-          <span className="font-bold text-slate-700">Key:</span>
-          <div className="flex items-center gap-1.5"><span className="min-w-[1.5rem] h-6 px-1 flex items-center justify-center bg-blue-100 text-blue-900 font-bold border border-blue-200 rounded text-[10px]">1</span> Relationship</div>
-          <div className="flex items-center gap-1.5"><span className="min-w-[1.5rem] h-6 px-1 flex items-center justify-center bg-white text-slate-300 border border-slate-200 rounded text-[10px]">0</span> No Relation</div>
+      <div 
+        className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm bg-slate-50 p-3 rounded border border-slate-200 matrix-key"
+        style={{ fontFamily: '"Times New Roman", Times, serif' }}
+      >
+          <span className="font-bold text-slate-800">Key:</span>
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            <span className="w-6 h-6 flex items-center justify-center bg-blue-100 text-blue-900 font-bold border border-blue-200 rounded text-xs">1</span> 
+            <span>Relationship</span>
+          </div>
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            <span className="w-6 h-6 flex items-center justify-center bg-white text-slate-400 border border-slate-300 rounded text-xs">0</span> 
+            <span>No Relation</span>
+          </div>
       </div>
       <div className="overflow-x-auto pb-4">
         <table className="w-full border-collapse text-sm border border-slate-300 table-auto">
           <thead>
             <tr>
-              <th className="p-2 border border-slate-300 bg-slate-800 text-white font-mono text-xs text-left min-w-[200px]">i \ j</th>
+              <th className="p-2 border border-slate-300 bg-slate-800 text-white text-xs text-left min-w-[200px]">i \ j</th>
               {factors.map((f, i) => (
-                <th key={i} className="p-2 border border-slate-300 bg-slate-100 text-slate-800 text-center text-xs font-bold font-mono px-3 w-auto">
+                <th key={i} className="p-2 border border-slate-300 bg-slate-100 text-slate-800 text-center text-xs font-bold px-3 w-auto">
                     {/* Columns: Short ID Only, Horizontal, Auto Width */}
                     {f.name}
                 </th>
@@ -466,8 +433,8 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
           <tbody>
             {matrix.map((row, i) => (
               <tr key={i} className="hover:bg-slate-50">
-                <td className="p-2 border border-slate-300 bg-slate-100 text-slate-800 font-bold text-left text-xs whitespace-normal leading-tight min-w-[200px]" title={factors[i].description}>
-                  {/* Rows: Full Description */}
+                <td className="p-2 border border-slate-300 bg-slate-100 text-slate-800 font-bold text-left text-sm whitespace-normal leading-tight min-w-[200px]" title={factors[i].description}>
+                  {/* Rows: Full Description - Text SM */}
                   <span className="mr-1">{factors[i].name}:</span>
                   <span className="font-normal text-slate-600">{factors[i].description}</span>
                 </td>
@@ -494,20 +461,32 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
     return (
       <div className="space-y-4">
         {/* Key / Legend */}
-        <div className="flex flex-wrap items-center gap-4 text-xs bg-slate-50 p-3 rounded border border-slate-200 matrix-key whitespace-nowrap">
-            <span className="font-bold text-slate-700">Key:</span>
-            <div className="flex items-center gap-1.5"><span className="min-w-[1.5rem] h-6 px-1 flex items-center justify-center bg-blue-100 text-blue-900 font-bold border border-blue-200 rounded text-[10px]">1</span> Direct</div>
-            <div className="flex items-center gap-1.5"><span className="min-w-[1.5rem] h-6 px-1 flex items-center justify-center bg-amber-100 text-amber-900 font-bold border border-amber-200 rounded text-[10px]">1*</span> Transitive</div>
-            <div className="flex items-center gap-1.5"><span className="min-w-[1.5rem] h-6 px-1 flex items-center justify-center bg-white text-slate-300 border border-slate-200 rounded text-[10px]">0</span> No Relation</div>
+        <div 
+            className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm bg-slate-50 p-3 rounded border border-slate-200 matrix-key"
+            style={{ fontFamily: '"Times New Roman", Times, serif' }}
+        >
+            <span className="font-bold text-slate-800">Key:</span>
+            <div className="flex items-center gap-2 whitespace-nowrap">
+                <span className="w-6 h-6 flex items-center justify-center bg-blue-100 text-blue-900 font-bold border border-blue-200 rounded text-xs">1</span> 
+                <span>Direct</span>
+            </div>
+            <div className="flex items-center gap-2 whitespace-nowrap">
+                <span className="w-6 h-6 flex items-center justify-center bg-amber-100 text-amber-900 font-bold border border-amber-200 rounded text-xs">1*</span> 
+                <span>Transitive</span>
+            </div>
+            <div className="flex items-center gap-2 whitespace-nowrap">
+                <span className="w-6 h-6 flex items-center justify-center bg-white text-slate-400 border border-slate-300 rounded text-xs">0</span> 
+                <span>No Relation</span>
+            </div>
         </div>
 
         <div className="overflow-x-auto pb-4">
           <table className="w-full border-collapse text-sm border border-slate-300 table-auto">
             <thead>
               <tr>
-                <th className="p-2 border border-slate-300 bg-slate-800 text-white font-mono text-xs text-left min-w-[200px]">i \ j</th>
+                <th className="p-2 border border-slate-300 bg-slate-800 text-white text-xs text-left min-w-[200px]">i \ j</th>
                 {factors.map((f, i) => (
-                  <th key={i} className="p-2 border border-slate-300 bg-slate-100 text-slate-800 text-center text-xs font-bold font-mono px-3 w-auto">
+                  <th key={i} className="p-2 border border-slate-300 bg-slate-100 text-slate-800 text-center text-xs font-bold px-3 w-auto">
                      {/* Columns: Short ID Only, Horizontal */}
                      {f.name}
                   </th>
@@ -520,8 +499,8 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
             <tbody>
               {frm.map((row, i) => (
                 <tr key={i} className="hover:bg-slate-50">
-                   <td className="p-2 border border-slate-300 bg-slate-100 text-slate-800 font-bold text-left whitespace-normal text-xs leading-tight min-w-[200px]" title={factors[i].description}>
-                        {/* Rows: Full Description */}
+                   <td className="p-2 border border-slate-300 bg-slate-100 text-slate-800 font-bold text-left whitespace-normal text-sm leading-tight min-w-[200px]" title={factors[i].description}>
+                        {/* Rows: Full Description - Text SM */}
                         <span className="mr-1">{factors[i].name}:</span>
                         <span className="font-normal text-slate-600">{factors[i].description}</span>
                    </td>
@@ -557,7 +536,7 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
   };
 
   return (
-    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500 relative" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 no-print border-b border-slate-200 pb-4">
         <div>
           <h2 className="text-xl font-bold text-slate-800">Model Results</h2>
@@ -603,10 +582,17 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
         </div>
       </div>
 
+      {/* Hidden Export-Specific Graph Component */}
+      <div className="absolute left-[-9999px] top-0" style={{ width: 'max-content', minWidth: '1500px' }}>
+         <div ref={printHierarchyRef} style={{ display: 'inline-block' }}>
+             <HierarchyGraph result={result} factors={factors} isExport={true} />
+         </div>
+      </div>
+
       <div ref={exportRef} className="bg-white rounded-lg border border-slate-200 shadow-sm min-h-[600px] print-content">
         {activeTab === 'hierarchy' && (
              <div className="p-4 h-full overflow-x-auto">
-                <HierarchyGraph result={result} factors={factors} />
+                <HierarchyGraph result={result} factors={factors} isExport={false} />
              </div>
         )}
         {activeTab === 'digraph' && (

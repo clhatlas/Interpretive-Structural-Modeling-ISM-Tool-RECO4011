@@ -57,7 +57,7 @@ You can connect the repository to Netlify for continuous deployment, so that eve
 The ISM Tool is suitable for:
 - Academic research that needs to structure complex systems into hierarchical models.
 - Decision-making studies where relationships among drivers, barriers, or criteria must be clarified.
-- Teaching ISM concepts in workshops or university courses.
+- Teaching ISM concepts in workshops or university courses. [1][2]
 
 ## Contributing
 

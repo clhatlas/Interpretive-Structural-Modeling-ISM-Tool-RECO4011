@@ -13,6 +13,8 @@ const InterrelationshipGraph: React.FC<Props> = ({ result, factors }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const categories = Array.from(new Set(factors.map(f => f.category).filter(Boolean))) as string[];
+
   useEffect(() => {
     if (!result || !svgRef.current || !containerRef.current) return;
 
@@ -23,16 +25,8 @@ const InterrelationshipGraph: React.FC<Props> = ({ result, factors }) => {
     const { initialReachabilityMatrix } = result;
     const containerWidth = containerRef.current.clientWidth || 800;
     
-    // Calculate Legend Width requirements
-    const categories = Array.from(new Set(factors.map(f => f.category).filter(Boolean))) as string[];
-    const itemWidth = 160; // Increased width to 160px
-    const minFooterWidth = categories.length * itemWidth + 100; // Extra padding
-
-    // Width MUST adapt to footer to prevent cutting off the legend
-    const width = Math.max(containerWidth, minFooterWidth);
-    
-    const footerHeight = 100; // Extra space for Title & Legends
-    const height = 600 + footerHeight; 
+    const width = Math.max(containerWidth, 600);
+    const height = 600; // Fixed height for graph part
     
     const radius = Math.min(width, 600) / 2 - 60; 
     const nodeRadius = 24;
@@ -162,58 +156,49 @@ const InterrelationshipGraph: React.FC<Props> = ({ result, factors }) => {
         .text((d) => d.data.name)
         .attr("font-size", "12px")
         .attr("font-weight", "bold")
-        .attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif")
+        .attr("font-family", "Times New Roman, Times, serif")
         .attr("fill", "#1e293b")
         .style("pointer-events", "none");
-
-    // --- Footer: Title & Legend ---
-    const footerY = 600 + 20;
-    const footerGroup = svg.append("g").attr("transform", `translate(0, ${footerY})`);
-
-    // Title
-    footerGroup.append("text")
-      .attr("x", width / 2)
-      .attr("y", 0)
-      .attr("text-anchor", "middle")
-      .attr("font-weight", "bold")
-      .attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif")
-      .attr("font-size", "18px")
-      .attr("fill", "#1e293b")
-      .text("Interrelationships between factors / barriers");
-
-    // Legend 1: Arrows
-    const arrowLegend = footerGroup.append("g").attr("transform", `translate(${width/2 - 150}, 30)`);
-    
-    // One-way
-    arrowLegend.append("line").attr("x1", 0).attr("y1", 0).attr("x2", 30).attr("y2", 0).attr("stroke", "#94a3b8").attr("stroke-width", 2);
-    arrowLegend.append("text").attr("x", 35).attr("y", 4).text("One-way Arrow (V/A)").attr("font-size", "12px").attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif").attr("fill", "#475569");
-    
-    // Two-way
-    const twoWayGroup = arrowLegend.append("g").attr("transform", `translate(170, 0)`);
-    twoWayGroup.append("line").attr("x1", 0).attr("y1", 0).attr("x2", 30).attr("y2", 0).attr("stroke", "#8b5cf6").attr("stroke-width", 2);
-    twoWayGroup.append("text").attr("x", 35).attr("y", 4).text("Two-way Arrow (X)").attr("font-size", "12px").attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif").attr("fill", "#475569");
-
-
-    // Legend 2: Categories
-    const totalLegendWidth = categories.length * itemWidth;
-    let currentX = (width - totalLegendWidth) / 2;
-
-    const catLegendGroup = footerGroup.append("g").attr("transform", `translate(0, 60)`);
-    
-    categories.forEach(cat => {
-        const color = getCategoryColorHex(cat);
-        const g = catLegendGroup.append("g").attr("transform", `translate(${currentX}, 0)`);
-        
-        g.append("circle").attr("cx", 0).attr("cy", 0).attr("r", 5).attr("fill", color).attr("stroke", "#cbd5e1");
-        g.append("text").attr("x", 10).attr("y", 4).text(cat).attr("font-size", "11px").attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif").attr("fill", "#475569");
-        currentX += itemWidth;
-    });
 
   }, [result, factors]);
 
   return (
-    <div ref={containerRef} className="w-full bg-white rounded-xl border border-slate-200 shadow-inner overflow-x-auto overflow-y-hidden">
-        <svg id="interrelationship-graph-svg" ref={svgRef} className="block mx-auto"></svg>
+    <div ref={containerRef} className="w-full bg-white rounded-xl border border-slate-200 shadow-inner overflow-hidden flex flex-col items-center pb-8">
+        <div className="w-full overflow-x-auto">
+            <svg id="interrelationship-graph-svg" ref={svgRef} className="block mx-auto"></svg>
+        </div>
+        
+        {/* HTML Legend */}
+        <div className="mt-4 flex flex-col items-center px-6 text-center graph-legend-container">
+            <h3 className="text-lg font-bold text-slate-800 mb-6 graph-legend-title">Interrelationships between factors / barriers</h3>
+            
+            {/* Arrow Types Legend */}
+            <div className="flex flex-wrap justify-center gap-x-10 gap-y-4 mb-6 border-b border-slate-200 pb-6 w-full max-w-2xl">
+                 <div className="flex items-center gap-3 graph-legend-item">
+                     <div className="w-10 h-px bg-slate-400 relative flex-shrink-0">
+                         <div className="absolute right-0 top-1/2 -translate-y-1/2 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-l-[8px] border-l-slate-400"></div>
+                     </div>
+                     <span className="text-sm text-slate-600 font-medium whitespace-nowrap">One-way Arrow (V/A)</span>
+                 </div>
+                 <div className="flex items-center gap-3 graph-legend-item">
+                     <div className="w-10 h-px bg-violet-500 relative flex-shrink-0">
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-r-[8px] border-r-violet-500"></div>
+                         <div className="absolute right-0 top-1/2 -translate-y-1/2 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-l-[8px] border-l-violet-500"></div>
+                     </div>
+                     <span className="text-sm text-slate-600 font-medium whitespace-nowrap">Two-way Arrow (X)</span>
+                 </div>
+            </div>
+
+            {/* Categories Legend */}
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-3">
+                {categories.map(cat => (
+                    <div key={cat} className="flex items-center gap-2 graph-legend-item">
+                        <span className="w-3 h-3 rounded-full border border-slate-300 flex-shrink-0" style={{backgroundColor: getCategoryColorHex(cat)}}></span>
+                        <span className="text-sm text-slate-600 font-medium">{cat}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
     </div>
   );
 };

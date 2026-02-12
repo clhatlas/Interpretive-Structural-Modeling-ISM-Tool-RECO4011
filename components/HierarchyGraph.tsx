@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { ISMResult, ISMElement } from '../types';
@@ -6,11 +7,14 @@ import { getCategoryColorHex } from './FactorInput';
 interface Props {
   result: ISMResult;
   factors: ISMElement[];
+  isExport?: boolean;
 }
 
-const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
+const HierarchyGraph: React.FC<Props> = ({ result, factors, isExport = false }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  const categories = Array.from(new Set(factors.map(f => f.category).filter(Boolean))) as string[];
 
   useEffect(() => {
     if (!result || !svgRef.current || !containerRef.current) return;
@@ -20,58 +24,39 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
 
     const { levels, initialReachabilityMatrix } = result;
     
-    // Configuration for Boxes
-    const boxWidth = 220;
-    const boxHeight = 80;
-    const hGap = 40; // Horizontal gap between boxes
-    const vGap = 100; // Vertical gap between levels
-    const footerHeight = 80; // Extra space for Title and Legend
+    // Configuration for Boxes - Larger to fit enlarged text
+    const boxWidth = isExport ? 450 : 250;
+    const boxHeight = isExport ? 240 : 110;
+    const hGap = isExport ? 100 : 30; 
+    const vGap = isExport ? 180 : 80;
     
-    // Calculate Legend Width to ensure it fits
-    const categories = Array.from(new Set(factors.map(f => f.category).filter(Boolean))) as string[];
-    const itemWidth = 180; // Increased to 180px to accommodate full category names
-    const minFooterWidth = categories.length * itemWidth + 100; // Extra padding
-
     // Calculate canvas size
     const maxNodesInLevel = Math.max(...levels.map(l => l.elements.length));
-    const requiredNodeWidth = maxNodesInLevel * (boxWidth + hGap) + 100;
-    const containerWidth = containerRef.current.clientWidth || 800;
+    const requiredNodeWidth = maxNodesInLevel * (boxWidth + hGap) + (isExport ? 200 : 100);
     
-    // Width should accommodate the widest part: nodes or footer legend
-    const width = Math.max(containerWidth, requiredNodeWidth, minFooterWidth);
-    
-    const height = Math.max(600, levels.length * (boxHeight + vGap) + 100 + footerHeight);
+    const containerWidth = isExport ? requiredNodeWidth : (containerRef.current.clientWidth || 800);
+    const width = Math.max(containerWidth, requiredNodeWidth);
+    const height = Math.max(600, levels.length * (boxHeight + vGap) + (isExport ? 200 : 100));
 
     const svg = d3.select(svgRef.current)
       .attr("width", width)
       .attr("height", height)
       .attr("viewBox", [0, 0, width, height])
-      .style("background-color", "#ffffff");
+      .style("background-color", "#ffffff")
+      .style("overflow", "visible");
 
     // Define Arrowhead markers
     const defs = svg.append("defs");
-    
-    // 1. Arrowhead for Side Entry (Same Level)
-    defs.append("marker")
-      .attr("id", "arrowhead-side")
-      .attr("viewBox", "0 -5 10 10")
-      .attr("refX", boxWidth / 2 + 10) 
-      .attr("refY", 0)
-      .attr("markerWidth", 6)
-      .attr("markerHeight", 6)
-      .attr("orient", "auto")
-      .append("path")
-      .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "#94a3b8");
+    const markerScale = isExport ? 2 : 1; 
 
-    // 2. Arrowhead for Bottom Entry (Level Up)
+    // Standard Arrowhead
     defs.append("marker")
-      .attr("id", "arrowhead-bottom")
+      .attr("id", isExport ? "arrowhead-exp" : "arrowhead")
       .attr("viewBox", "0 -5 10 10")
       .attr("refX", 10) 
       .attr("refY", 0)
-      .attr("markerWidth", 6)
-      .attr("markerHeight", 6)
+      .attr("markerWidth", 6 * markerScale)
+      .attr("markerHeight", 6 * markerScale)
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
@@ -84,7 +69,6 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
         const y = 50 + (lvlIndex * (boxHeight + vGap));
         const count = lvl.elements.length;
         
-        // Center the level horizontally
         const totalLevelWidth = count * boxWidth + (count - 1) * hGap;
         const startX = (width - totalLevelWidth) / 2;
 
@@ -99,7 +83,6 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
         });
     });
 
-    // Prepare Link Data from Initial Reachability Matrix
     const links: any[] = [];
     const matrix = initialReachabilityMatrix;
     
@@ -110,6 +93,7 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
                 const target = nodes.find(n => n.id === j);
                 if (source && target) {
                     const levelDiff = source.level - target.level;
+                    // Draw links for adjacent levels or same level
                     if (levelDiff === 0 || levelDiff === 1) {
                         links.push({ source, target, levelDiff });
                     }
@@ -117,6 +101,8 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
             }
         }
     }
+
+    const markerUrl = isExport ? "url(#arrowhead-exp)" : "url(#arrowhead)";
 
     // Draw Links
     svg.selectAll(".link")
@@ -126,26 +112,36 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
         .attr("class", "link")
         .attr("d", (d: any) => {
             if (d.levelDiff === 0) {
-                const sx = d.source.x + boxWidth / 2;
-                const sy = d.source.y + boxHeight / 2;
-                const tx = d.target.x + boxWidth / 2;
-                const ty = d.target.y + boxHeight / 2;
-                return `M${sx},${sy}L${tx},${ty}`;
+                // Same Level: Side-to-Side
+                if (d.source.x < d.target.x) {
+                    const startX = d.source.x + boxWidth;
+                    const startY = d.source.y + boxHeight / 2;
+                    const endX = d.target.x;
+                    const endY = d.target.y + boxHeight / 2;
+                    return `M${startX},${startY}L${endX},${endY}`;
+                } else {
+                    const startX = d.source.x;
+                    const startY = d.source.y + boxHeight / 2;
+                    const endX = d.target.x + boxWidth;
+                    const endY = d.target.y + boxHeight / 2;
+                    return `M${startX},${startY}L${endX},${endY}`;
+                }
             } else {
+                // Different Level: Bottom-to-Top
                 const startX = d.source.x + boxWidth / 2;
-                const startY = d.source.y;
+                const startY = d.source.y; 
                 const endX = d.target.x + boxWidth / 2;
-                const endY = d.target.y + boxHeight;
+                const endY = d.target.y + boxHeight; 
                 const midY = (startY + endY) / 2;
                 return `M${startX},${startY}V${midY}H${endX}V${endY}`;
             }
         })
         .attr("fill", "none")
         .attr("stroke", "#94a3b8")
-        .attr("stroke-width", 2)
-        .attr("marker-end", (d: any) => d.levelDiff === 0 ? "url(#arrowhead-side)" : "url(#arrowhead-bottom)");
+        .attr("stroke-width", isExport ? 4 : 2)
+        .attr("marker-end", markerUrl);
 
-    // Draw Nodes (Groups)
+    // Draw Nodes
     const nodeGroups = svg.selectAll(".node")
         .data(nodes)
         .enter()
@@ -153,17 +149,22 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
         .attr("class", "node")
         .attr("transform", (d: any) => `translate(${d.x},${d.y})`);
 
-    // Box Rect
     nodeGroups.append("rect")
         .attr("width", boxWidth)
         .attr("height", boxHeight)
         .attr("rx", 6)
         .attr("fill", "#ffffff")
         .attr("stroke", (d:any) => getCategoryColorHex(d.data.category))
-        .attr("stroke-width", 2)
+        .attr("stroke-width", isExport ? 5 : 2)
         .attr("filter", "drop-shadow(0px 4px 6px rgba(0,0,0,0.1))");
 
-    // HTML Content via foreignObject
+    // Styling Params - Enlarged Fonts
+    const titleFS = isExport ? '36pt' : '16px'; 
+    const bodyFS = isExport ? '28pt' : '13px'; 
+    const padding = isExport ? '4px' : '4px'; 
+    const lineHeight = isExport ? '1.15' : '1.2';
+    const clamp = isExport ? '5' : '4';
+
     nodeGroups.append("foreignObject")
         .attr("width", boxWidth)
         .attr("height", boxHeight)
@@ -174,13 +175,13 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
         .style("flex-direction", "column")
         .style("justify-content", "center")
         .style("align-items", "center")
-        .style("padding", "4px")
+        .style("padding", padding)
         .style("box-sizing", "border-box")
         .style("text-align", "center")
-        .style("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif")
+        .style("font-family", "Times New Roman, Times, serif")
         .html((d: any) => `
-          <div style="font-weight:bold; font-size:11px; color:#334155; margin-bottom:2px; line-height:1.1;">${d.data.name}</div>
-          <div style="font-size:9px; line-height:1.2; color:#1e293b; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;">
+          <div style="font-weight:bold; font-size:${titleFS}; color:#334155; margin-bottom:4px; line-height:1.1;">${d.data.name}</div>
+          <div style="font-size:${bodyFS}; line-height:${lineHeight}; color:#1e293b; overflow:hidden; display:-webkit-box; -webkit-line-clamp:${clamp}; -webkit-box-orient:vertical;">
             ${d.data.description || d.data.name}
           </div>
         `);
@@ -196,59 +197,29 @@ const HierarchyGraph: React.FC<Props> = ({ result, factors }) => {
        .text((d: any) => `Level ${d}`)
        .attr("fill", "#64748b")
        .attr("font-weight", "bold")
-       .attr("font-size", "14px")
-       .attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif")
+       .attr("font-size", isExport ? "36px" : "14px")
+       .attr("font-family", "Times New Roman, Times, serif")
        .attr("alignment-baseline", "middle");
 
-    // --- Footer: Title & Legend ---
-    const footerY = height - footerHeight + 25;
-    const footerGroup = svg.append("g").attr("transform", `translate(0, ${footerY})`);
-
-    // Title
-    footerGroup.append("text")
-      .attr("x", width / 2)
-      .attr("y", -10)
-      .attr("text-anchor", "middle")
-      .attr("font-weight", "bold")
-      .attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif")
-      .attr("font-size", "18px")
-      .attr("fill", "#1e293b")
-      .text("ISM-based model");
-
-    // Legend Categories
-    const totalLegendWidth = categories.length * itemWidth;
-    let currentX = (width - totalLegendWidth) / 2;
-
-    const legendGroup = footerGroup.append("g").attr("transform", `translate(0, 20)`);
-    
-    categories.forEach(cat => {
-        const color = getCategoryColorHex(cat);
-        const g = legendGroup.append("g").attr("transform", `translate(${currentX}, 0)`);
-        
-        g.append("circle")
-         .attr("cx", 0)
-         .attr("cy", 0)
-         .attr("r", 6)
-         .attr("fill", color)
-         .attr("stroke", "#cbd5e1");
-        
-        g.append("text")
-         .attr("x", 12)
-         .attr("y", 4)
-         .attr("font-size", "12px")
-         .attr("font-family", "Helvetica Neue, Helvetica, Arial, sans-serif")
-         .attr("fill", "#475569")
-         .attr("font-weight", "500")
-         .text(cat);
-
-        currentX += itemWidth;
-    });
-
-  }, [result, factors]);
+  }, [result, factors, isExport]);
 
   return (
-    <div ref={containerRef} className="w-full bg-white rounded-xl border border-slate-200 shadow-inner overflow-x-auto overflow-y-hidden">
-        <svg id="hierarchy-graph-svg" ref={svgRef} className="block min-w-[600px] mx-auto"></svg>
+    <div ref={containerRef} className={`w-full bg-white ${isExport ? '' : 'rounded-xl border border-slate-200 shadow-inner'} overflow-hidden flex flex-col items-center pb-8`}>
+        <div className={`w-full ${isExport ? '' : 'overflow-x-auto'}`}>
+            <svg id={isExport ? "hierarchy-graph-svg-export" : "hierarchy-graph-svg"} ref={svgRef} className="block min-w-[600px] mx-auto"></svg>
+        </div>
+        
+        <div className={`mt-6 flex flex-col items-center px-6 text-center graph-legend-container`}>
+            <h3 className={`${isExport ? 'text-4xl mb-10' : 'text-lg mb-4'} font-bold text-slate-800 graph-legend-title`}>ISM-based model</h3>
+            <div className={`flex flex-wrap justify-center ${isExport ? 'gap-x-16 gap-y-8' : 'gap-x-6 gap-y-3'}`}>
+                {categories.map(cat => (
+                    <div key={cat} className="flex items-center gap-2 graph-legend-item">
+                        <span className={`${isExport ? 'w-8 h-8 border-4' : 'w-3 h-3 border'} rounded-full border-slate-300 flex-shrink-0`} style={{backgroundColor: getCategoryColorHex(cat)}}></span>
+                        <span className={`${isExport ? 'text-3xl' : 'text-sm'} text-slate-600 font-medium`}>{cat}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
     </div>
   );
 };
