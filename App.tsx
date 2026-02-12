@@ -5,7 +5,7 @@ import FactorInput from './components/FactorInput';
 import SSIMGrid from './components/SSIMGrid';
 import ResultsView from './components/ResultsView';
 import { runISMAnalysis } from './services/ismLogic';
-import { HardHat, BookOpen, ChevronDown, ChevronUp, Construction } from 'lucide-react';
+import { HardHat, BookOpen, ChevronDown, ChevronUp, Construction, AlertTriangle } from 'lucide-react';
 
 // Default factors based on the user provided list (Confined Space / Safety Factors)
 const DEFAULT_FACTORS: ISMElement[] = [
@@ -105,6 +105,14 @@ const App: React.FC = () => {
         {step === AppStep.DEFINE_FACTORS && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
              
+             {/* Announcement Bar */}
+             <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r shadow-sm flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800 font-medium">
+                  This Application cannot store data automatically, save your progress with JSON or CSV format before leaving the site.
+                </p>
+             </div>
+
              {/* User Manual / Instructions */}
              <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                 <div 
@@ -227,4 +235,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-    

@@ -271,6 +271,14 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
   return (
     <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
       
+      {/* Announcement Bar */}
+      <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r shadow-sm flex items-start gap-3 flex-shrink-0">
+        <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+        <p className="text-sm text-amber-800 font-medium">
+          This Application cannot store data automatically. Save your progress in Excel/image/JSON format together with your factors/barriers on the previous page before leaving the site.
+        </p>
+      </div>
+
       {/* Header & Tabs */}
       <div className="flex flex-col gap-4 border-b border-slate-200 pb-2 flex-shrink-0">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -367,11 +375,11 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
         <table className="border-collapse w-max min-w-full table-fixed">
           <thead>
             <tr>
-              <th className="sticky top-0 left-0 z-30 bg-slate-50 p-2 text-left text-slate-600 font-bold text-xs border-b border-r border-slate-300 min-w-[200px] shadow-sm w-[250px]">
+              <th className="sticky top-0 left-0 z-30 bg-slate-50 p-3 text-left text-slate-600 font-bold text-sm border-b border-r border-slate-300 min-w-[300px] w-[350px] shadow-sm">
                 Factor i \ j
               </th>
               {factors.map((f, idx) => (
-                <th key={f.id} className="sticky top-0 z-20 bg-slate-50 p-2 text-slate-700 font-bold text-xs w-12 text-center border-b border-slate-300 border-r border-slate-100 shadow-sm">
+                <th key={f.id} className="sticky top-0 z-20 bg-slate-50 p-2 text-slate-700 font-bold text-sm w-16 text-center border-b border-slate-300 border-r border-slate-100 shadow-sm">
                    {/* Horizontal Upright ID */}
                    {f.name}
                 </th>
@@ -381,7 +389,7 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
           <tbody>
             {factors.map((rowFactor, i) => (
               <tr key={rowFactor.id} className="hover:bg-slate-50">
-                <td className={`sticky left-0 z-20 bg-white p-2 text-slate-700 text-xs font-semibold border-r border-slate-300 border-b border-slate-100 border-l-4 ${getCategoryTheme(rowFactor.category).borderL} min-w-[200px] max-w-[300px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] whitespace-normal leading-tight`} title={rowFactor.description}>
+                <td className={`sticky left-0 z-20 bg-white p-3 text-slate-700 text-sm font-semibold border-r border-slate-300 border-b border-slate-100 border-l-4 ${getCategoryTheme(rowFactor.category).borderL} min-w-[300px] max-w-[400px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] whitespace-normal leading-tight`} title={rowFactor.description}>
                   <span className="text-slate-400 mr-2">{rowFactor.name}.</span>
                   {rowFactor.description || rowFactor.name}
                 </td>
@@ -416,12 +424,12 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
                       }
 
                       return (
-                        <td key={colFactor.id} className={`p-0.5 border border-slate-200 text-center relative`}>
+                        <td key={colFactor.id} className={`p-1 border border-slate-200 text-center relative`}>
                             <div 
-                                className={`w-full h-8 md:h-9 rounded-sm flex items-center justify-center text-xs cursor-help ${cellClass}`}
+                                className={`w-full h-10 md:h-12 rounded-md flex items-center justify-center text-sm md:text-base cursor-help ${cellClass}`}
                                 title={tooltip}
                             >
-                                {isConflict ? <HelpCircle className="w-4 h-4" /> : displayVal}
+                                {isConflict ? <HelpCircle className="w-5 h-5" /> : displayVal}
                             </div>
                         </td>
                       );
@@ -429,11 +437,11 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
 
                   // --- INPUT MODE RENDER ---
                   return (
-                    <td key={colFactor.id} className={`p-0.5 border border-slate-200 text-center relative ${isHighlighted ? 'bg-yellow-50' : ''}`}>
+                    <td key={colFactor.id} className={`p-1 border border-slate-200 text-center relative ${isHighlighted ? 'bg-yellow-50' : ''}`}>
                         <button
                           type="button"
                           onClick={() => toggleValue(rowFactor.id, colFactor.id)}
-                          className={`w-full h-8 md:h-9 rounded-sm border font-bold text-xs md:text-sm transition-all flex items-center justify-center ${getCellColor(val)} ${isHighlighted ? 'ring-2 ring-yellow-400 ring-offset-1' : ''}`}
+                          className={`w-full h-10 md:h-12 rounded-md border font-bold text-sm md:text-base transition-all flex items-center justify-center ${getCellColor(val)} ${isHighlighted ? 'ring-2 ring-yellow-400 ring-offset-1' : ''}`}
                         >
                           {val}
                         </button>
