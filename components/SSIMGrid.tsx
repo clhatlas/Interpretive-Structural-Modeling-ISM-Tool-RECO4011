@@ -97,10 +97,11 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
   const handleExportExcel = () => {
     let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
     html += '<head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>SSIM Matrix</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
-    html += '<style>body, table { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 12px; } table { border-collapse: collapse; } td, th { border: 0.5pt solid #94a3b8; padding: 5px; text-align: center; vertical-align: middle; } .header { font-weight: bold; background-color: #f1f5f9; text-align: left; } .header-col { font-weight: bold; background-color: #f1f5f9; text-align: center; } .v-cell { background-color: #d1fae5; color: #065f46; font-weight: bold; } .a-cell { background-color: #fef3c7; color: #92400e; font-weight: bold; } .x-cell { background-color: #dbeafe; color: #1e40af; font-weight: bold; } .o-cell { color: #94a3b8; } .diagonal { background-color: #f1f5f9; color: #cbd5e1; } .lower { background-color: #f8fafc; } </style>';
+    html += '<style>body, table { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 12px; } table { border-collapse: collapse; } td, th { border: 0.5pt solid #94a3b8; padding: 5px; text-align: center; vertical-align: middle; } .header { font-weight: bold; background-color: #f1f5f9; text-align: left; } .header-col { font-weight: bold; background-color: #f1f5f9; text-align: center; } .v-cell { background-color: #d1fae5; color: #065f46; font-weight: bold; } .a-cell { background-color: #fef3c7; color: #92400e; font-weight: bold; } .x-cell { background-color: #dbeafe; color: #1e40af; font-weight: bold; } .o-cell { color: #94a3b8; } .diagonal { background-color: #f1f5f9; color: #cbd5e1; } .lower { background-color: #f8fafc; } .conflict { background-color: #fee2e2; color: #b91c1c; font-weight: bold; } .majority { background-color: #fef9c3; color: #854d0e; font-weight: bold; } .unanimous { color: #64748b; }</style>';
     html += '</head><body>';
     
-    html += '<h3>Structural Self-Interaction Matrix (SSIM)</h3>';
+    const title = activeTab === 'compare' ? 'SSIM Comparison Analysis' : 'Structural Self-Interaction Matrix (SSIM)';
+    html += `<h3>${title}</h3>`;
     html += '<table><thead><tr><th style="min-width:200px;">Factor i \\ j</th>';
     factors.forEach(f => {
         html += `<th class="header-col">${f.name}</th>`;
@@ -110,31 +111,50 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
     factors.forEach((rowFactor, i) => {
         html += `<tr><td class="header">${rowFactor.name}: ${rowFactor.description || ''}</td>`;
         factors.forEach((colFactor, j) => {
-            const val = ssim[rowFactor.id]?.[colFactor.id] || SSIMValue.O;
             
             if (i === j) {
                 html += `<td class="diagonal"></td>`;
             } else if (j < i) {
                 html += `<td class="lower"></td>`;
             } else {
-                 let cellClass = 'o-cell';
-                 if (val === SSIMValue.V) cellClass = 'v-cell';
-                 else if (val === SSIMValue.A) cellClass = 'a-cell';
-                 else if (val === SSIMValue.X) cellClass = 'x-cell';
-                 html += `<td class="${cellClass}">${val}</td>`;
+                 if (activeTab === 'compare') {
+                    const { isUnanimous, isConflict, majorityVal } = getConsensus(rowFactor.id, colFactor.id);
+                    let cellClass = 'unanimous';
+                    let val = majorityVal;
+                    
+                    if (isConflict) {
+                        cellClass = 'conflict';
+                        val = '?';
+                    } else if (!isUnanimous) {
+                        cellClass = 'majority';
+                    }
+                    html += `<td class="${cellClass}">${val}</td>`;
+                 } else {
+                     const val = ssim[rowFactor.id]?.[colFactor.id] || SSIMValue.O;
+                     let cellClass = 'o-cell';
+                     if (val === SSIMValue.V) cellClass = 'v-cell';
+                     else if (val === SSIMValue.A) cellClass = 'a-cell';
+                     else if (val === SSIMValue.X) cellClass = 'x-cell';
+                     html += `<td class="${cellClass}">${val}</td>`;
+                 }
             }
         });
         html += '</tr>';
     });
     
     html += '</tbody></table>';
-    html += '<br/><div><strong>Legend:</strong> V: i->j, A: j->i, X: Mutual, O: None</div>';
+    
+    if (activeTab === 'compare') {
+        html += '<br/><div><strong>Legend:</strong> <span style="background-color: #fee2e2; color: #b91c1c; padding: 2px;">?</span> Conflict (No Majority), <span style="background-color: #fef9c3; color: #854d0e; padding: 2px;">Value</span> Majority Suggestion, <span style="color: #64748b;">Value</span> Unanimous</div>';
+    } else {
+        html += '<br/><div><strong>Legend:</strong> V: i->j, A: j->i, X: Mutual, O: None</div>';
+    }
     html += '</body></html>';
 
     const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `SSIM_Export_${new Date().toISOString().split('T')[0]}.xls`;
+    link.download = `SSIM_${activeTab === 'compare' ? 'Comparison' : 'Export'}_${new Date().toISOString().split('T')[0]}.xls`;
     link.click();
   };
 
@@ -166,7 +186,7 @@ const SSIMGrid: React.FC<Props> = ({ factors, ssim, setSsim, onNext, onBack }) =
         });
         const link = document.createElement('a');
         link.href = canvas.toDataURL('image/png');
-        link.download = `SSIM_Matrix_${new Date().toISOString().split('T')[0]}.png`;
+        link.download = `SSIM_${activeTab === 'compare' ? 'Comparison' : 'Matrix'}_${new Date().toISOString().split('T')[0]}.png`;
         link.click();
     } catch (e) {
         console.error("Export failed", e);
