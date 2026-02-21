@@ -21,8 +21,9 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
   const [activeTab, setActiveTab] = useState<'hierarchy' | 'digraph' | 'micmac' | 'analysis' | 'irm' | 'frm'>('irm');
   const exportRef = useRef<HTMLDivElement>(null);
   const printHierarchyRef = useRef<HTMLDivElement>(null);
+  const printDigraphRef = useRef<HTMLDivElement>(null);
 
-  const applyCloneTransformations = (clonedDoc: Document, isGraph: boolean) => {
+  const applyCloneTransformations = (clonedDoc: Document) => {
         // 1. Inject Global Styles for Font and Layout
         const style = clonedDoc.createElement('style');
         style.innerHTML = `
@@ -88,23 +89,6 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                 justify-content: center !important;
             }
             
-            /* HTML Legends for Digraph */
-            .graph-legend-container {
-                margin-top: 50px !important;
-                padding: 20px !important;
-            }
-            .graph-legend-title {
-                font-size: 28pt !important;
-                margin-bottom: 30px !important;
-            }
-            .graph-legend-item {
-                margin-right: 50px !important;
-                margin-bottom: 25px !important;
-            }
-            .graph-legend-item span {
-                font-size: 22pt !important;
-            }
-            
             /* MICMAC Description Boxes - ENLARGED */
             .micmac-description-box {
                 margin-bottom: 20px !important;
@@ -147,11 +131,6 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
             element.style.height = 'auto';
             element.style.overflow = 'visible';
             
-            if (isGraph) {
-                element.style.padding = '20px';
-                element.style.margin = '0';
-            }
-
             const scrollables = element.querySelectorAll('.overflow-x-auto, .overflow-auto');
             scrollables.forEach(el => {
                 const htmlEl = el as HTMLElement;
@@ -180,10 +159,10 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
             });
         }
 
-        // 3. Inject Font Family for SVGs (Digraph only)
+        // 3. Inject Font Family for SVGs (excluding graphs which have their own export logic)
         const svgs = clonedDoc.querySelectorAll('svg');
         svgs.forEach(svg => {
-            if (svg.id === 'hierarchy-graph-svg') return; 
+            if (svg.id === 'hierarchy-graph-svg' || svg.id === 'interrelationship-graph-svg') return; 
 
             const svgStyle = clonedDoc.createElement('style');
             svgStyle.innerHTML = `
@@ -211,24 +190,29 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
     try {
       let canvas: HTMLCanvasElement;
       
-      // Special handling for Hierarchy
       if (activeTab === 'hierarchy' && printHierarchyRef.current) {
          canvas = await html2canvas(printHierarchyRef.current, {
             backgroundColor: '#ffffff',
             scale: 2, 
             logging: false,
-            // Ensure we capture everything by allowing width to expand
             windowWidth: printHierarchyRef.current.scrollWidth + 200, 
             width: printHierarchyRef.current.scrollWidth + 50,
          });
+      } else if (activeTab === 'digraph' && printDigraphRef.current) {
+         canvas = await html2canvas(printDigraphRef.current, {
+             backgroundColor: '#ffffff',
+             scale: 2, 
+             logging: false,
+             windowWidth: 2600, // Large window width for the enlarged graph
+             width: 2500,
+         });
       } else {
-         const isGraph = activeTab === 'digraph';
          canvas = await html2canvas(exportRef.current, {
             backgroundColor: '#ffffff',
             scale: 4, 
             logging: false,
             windowWidth: 3000, 
-            onclone: (doc) => applyCloneTransformations(doc, isGraph)
+            onclone: (doc) => applyCloneTransformations(doc)
          });
       }
 
@@ -278,19 +262,25 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                 backgroundColor: '#ffffff',
                 scale: 2, 
                 logging: false,
-                // Adjust width to fit content dynamically
                 windowWidth: printHierarchyRef.current.scrollWidth + 200, 
                 width: printHierarchyRef.current.scrollWidth + 50,
             });
+        } else if (activeTab === 'digraph' && printDigraphRef.current) {
+            canvas = await html2canvas(printDigraphRef.current, {
+                backgroundColor: '#ffffff',
+                scale: 2, 
+                logging: false,
+                windowWidth: 2600, 
+                width: 2500,
+            });
         } else {
             if (!exportRef.current) return;
-            const isGraph = activeTab === 'digraph';
             canvas = await html2canvas(exportRef.current, {
                 backgroundColor: '#ffffff',
                 scale: 4, 
                 logging: false,
                 windowWidth: 3000, 
-                onclone: (doc) => applyCloneTransformations(doc, isGraph)
+                onclone: (doc) => applyCloneTransformations(doc)
             });
         }
 
@@ -586,6 +576,9 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
       <div className="absolute left-[-9999px] top-0" style={{ width: 'max-content', minWidth: '1500px' }}>
          <div ref={printHierarchyRef} style={{ display: 'inline-block' }}>
              <HierarchyGraph result={result} factors={factors} isExport={true} />
+         </div>
+         <div ref={printDigraphRef} style={{ display: 'inline-block' }}>
+             <InterrelationshipGraph result={result} factors={factors} isExport={true} />
          </div>
       </div>
 

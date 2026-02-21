@@ -100,7 +100,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 print:p-0 flex-grow w-full">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 print:p-0 flex-grow w-full">
         
         {step === AppStep.DEFINE_FACTORS && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
