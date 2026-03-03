@@ -2,19 +2,12 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import { ISMResult, ISMElement } from '../types';
+import { calculateMicmacPoints, classifyMicmacQuadrants, MicmacDataPoint } from '../services/ismLogic';
 
 interface Props {
   result: ISMResult;
   factors: ISMElement[];
-}
-
-interface MicmacDataPoint {
-  id: string;
-  name: string;
-  description?: string;
-  category?: string;
-  drivingPower: number;
-  dependencePower: number;
+  chartId?: string;
 }
 
 interface GroupedPoint {
@@ -24,24 +17,13 @@ interface GroupedPoint {
   labels: string[];
 }
 
-const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
+const MicmacAnalysis: React.FC<Props> = ({ result, factors, chartId }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // 1. Calculate Powers
   const rawData: MicmacDataPoint[] = useMemo(() => {
-    const frm = result.finalReachabilityMatrix;
-    return factors.map((f, i) => {
-      // Driving Power = Sum of Row
-      const drivingPower = frm[i].reduce((sum, val) => sum + val, 0);
-      // Dependence Power = Sum of Column
-      const dependencePower = frm.reduce((sum, row) => sum + row[i], 0);
-      return {
-        ...f,
-        drivingPower,
-        dependencePower
-      };
-    });
+    return calculateMicmacPoints(factors, result.finalReachabilityMatrix);
   }, [result, factors]);
 
   // 2. Group Points to avoid Overlap
@@ -84,25 +66,7 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
   const splitPoint = factors.length / 2; // Standard split at N/2
   
   const quadrants = useMemo(() => {
-    const q = {
-      autonomous: [] as MicmacDataPoint[],
-      dependent: [] as MicmacDataPoint[],
-      linkage: [] as MicmacDataPoint[],
-      driver: [] as MicmacDataPoint[],
-    };
-
-    rawData.forEach(p => {
-        if (p.drivingPower <= splitPoint && p.dependencePower <= splitPoint) {
-            q.autonomous.push(p);
-        } else if (p.drivingPower <= splitPoint && p.dependencePower > splitPoint) {
-            q.dependent.push(p);
-        } else if (p.drivingPower > splitPoint && p.dependencePower > splitPoint) {
-            q.linkage.push(p);
-        } else {
-            q.driver.push(p);
-        }
-    });
-    return q;
+    return classifyMicmacQuadrants(rawData, splitPoint);
   }, [rawData, splitPoint]);
 
   // 4. Render Chart with D3
@@ -490,7 +454,7 @@ const MicmacAnalysis: React.FC<Props> = ({ result, factors }) => {
   return (
     <div className="flex flex-col gap-8">
         {/* Chart Section */}
-        <div ref={containerRef} className="w-full bg-white rounded-xl border border-slate-200 shadow-sm relative overflow-x-auto overflow-y-hidden">
+        <div id={chartId} ref={containerRef} className="w-full bg-white rounded-xl border border-slate-200 shadow-sm relative overflow-x-auto overflow-y-hidden">
             <svg ref={svgRef} className="block mx-auto"></svg>
             <div className="absolute top-2 right-2 bg-white/90 p-2 text-xs border border-slate-200 rounded shadow-sm z-10" style={{top: '10px', right: '10px'}}>
                 <p><strong>Split Point:</strong> {splitPoint.toFixed(1)}</p>

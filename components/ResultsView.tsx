@@ -5,9 +5,10 @@ import HierarchyGraph from './HierarchyGraph';
 import InterrelationshipGraph from './InterrelationshipGraph';
 import AnalysisTable from './AnalysisTable';
 import MicmacAnalysis from './MicmacAnalysis';
-import { Download, Printer, ArrowLeft, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { Download, Printer, ArrowLeft, RefreshCw, FileSpreadsheet, FileText } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from "jspdf";
+import { calculateMicmacPoints, classifyMicmacQuadrants } from '../services/ismLogic';
 
 interface Props {
   factors: ISMElement[];
@@ -22,6 +23,7 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
   const exportRef = useRef<HTMLDivElement>(null);
   const printHierarchyRef = useRef<HTMLDivElement>(null);
   const printDigraphRef = useRef<HTMLDivElement>(null);
+  const printMicmacRef = useRef<HTMLDivElement>(null);
 
   const applyCloneTransformations = (clonedDoc: Document) => {
         // 1. Inject Global Styles for Font and Layout
@@ -325,6 +327,63 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
     link.click();
   };
 
+  const handleExportWord = async () => {
+    try {
+        // 1. Generate Level Partition Table
+        const levelTableHTML = generateAnalysisTableHTML();
+
+        // 2. Generate MICMAC Data
+        const micmacPoints = calculateMicmacPoints(factors, result.finalReachabilityMatrix);
+        const splitPoint = factors.length / 2;
+        const quadrants = classifyMicmacQuadrants(micmacPoints, splitPoint);
+        
+        let micmacHTML = '<h3>MICMAC Analysis</h3>';
+        
+        // Capture Chart
+        if (printMicmacRef.current) {
+            const canvas = await html2canvas(printMicmacRef.current, {
+                scale: 2,
+                backgroundColor: '#ffffff'
+            });
+            const imgData = canvas.toDataURL('image/png');
+            micmacHTML += `<p><img src="${imgData}" width="600" /></p>`;
+        }
+
+        // Quadrant Lists
+        const renderQuad = (title: string, items: any[], desc: string) => {
+            let html = `<h4>${title}</h4><p><i>${desc}</i></p>`;
+            if (items.length === 0) html += '<p>None</p>';
+            else {
+                html += '<ul>';
+                items.forEach(i => html += `<li><b>${i.name}</b>: ${i.description || ''}</li>`);
+                html += '</ul>';
+            }
+            return html;
+        };
+
+        micmacHTML += renderQuad("IV. Independent / Drivers", quadrants.driver, "Strong driving power, weak dependence.");
+        micmacHTML += renderQuad("III. Linkage", quadrants.linkage, "Strong driving power, strong dependence.");
+        micmacHTML += renderQuad("I. Autonomous", quadrants.autonomous, "Weak driving power, weak dependence.");
+        micmacHTML += renderQuad("II. Dependent", quadrants.dependent, "Weak driving power, strong dependence.");
+
+        // 3. Combine into Word Doc
+        const header = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Export</title><style>body { font-family: "Times New Roman", serif; font-size: 12pt; } table { border-collapse: collapse; width: 100%; margin-bottom: 20px; } td, th { border: 1px solid black; padding: 8px; text-align: left; } th { background-color: #f2f2f2; }</style></head><body>';
+        const footer = '</body></html>';
+        
+        const content = `${header}<h1>ISM Analysis Results</h1><h2>Level Partition</h2>${levelTableHTML}<br/>${micmacHTML}${footer}`;
+
+        const blob = new Blob([content], { type: 'application/msword' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `ISM_Result_Word_${new Date().toISOString().split('T')[0]}.doc`;
+        link.click();
+
+    } catch (e) {
+        console.error("Word export failed", e);
+        alert("Failed to export to Word.");
+    }
+  };
+
   // Helper to generate HTML Table for Analysis
   const generateAnalysisTableHTML = () => {
       let html = '<table><thead><tr><th>Factor</th><th>Reachability Set</th><th>Antecedent Set</th><th>Intersection</th><th>Level</th></tr></thead><tbody>';
@@ -538,6 +597,10 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
                   <Printer className="w-4 h-4" /> PDF Report
                </button>
                
+               <button onClick={handleExportWord} className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50 text-xs font-bold shadow-sm animate-in fade-in">
+                  <FileText className="w-4 h-4 text-blue-600" /> Word Report
+               </button>
+
                {(activeTab === 'analysis' || activeTab === 'frm' || activeTab === 'irm') && (
                  <button onClick={handleExportExcel} className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50 text-xs font-bold shadow-sm animate-in fade-in">
                     <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> Excel
@@ -579,6 +642,9 @@ const ResultsView: React.FC<Props> = ({ factors, result, onReset, onBack }) => {
          </div>
          <div ref={printDigraphRef} style={{ display: 'inline-block' }}>
              <InterrelationshipGraph result={result} factors={factors} isExport={true} />
+         </div>
+         <div ref={printMicmacRef} style={{ display: 'inline-block', width: '900px', padding: '20px', background: 'white' }}>
+             <MicmacAnalysis result={result} factors={factors} chartId="micmac-export" />
          </div>
       </div>
 

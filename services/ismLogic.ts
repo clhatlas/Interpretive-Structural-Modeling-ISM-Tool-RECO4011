@@ -1,4 +1,58 @@
-import { SSIMValue, BinaryMatrix, LevelPartition, ISMResult } from '../types';
+import { SSIMValue, BinaryMatrix, LevelPartition, ISMResult, ISMElement } from '../types';
+
+export interface MicmacDataPoint extends ISMElement {
+  drivingPower: number;
+  dependencePower: number;
+}
+
+export interface MicmacQuadrants {
+  autonomous: MicmacDataPoint[];
+  dependent: MicmacDataPoint[];
+  linkage: MicmacDataPoint[];
+  driver: MicmacDataPoint[];
+}
+
+/**
+ * Calculates Driving and Dependence Power for each factor based on the Final Reachability Matrix.
+ */
+export const calculateMicmacPoints = (factors: ISMElement[], frm: BinaryMatrix): MicmacDataPoint[] => {
+  return factors.map((f, i) => {
+    // Driving Power = Sum of Row
+    const drivingPower = frm[i].reduce((sum, val) => sum + val, 0);
+    // Dependence Power = Sum of Column
+    const dependencePower = frm.reduce((sum, row) => sum + row[i], 0);
+    return {
+      ...f,
+      drivingPower,
+      dependencePower
+    };
+  });
+};
+
+/**
+ * Classifies MICMAC points into four quadrants based on a split point.
+ */
+export const classifyMicmacQuadrants = (points: MicmacDataPoint[], splitPoint: number): MicmacQuadrants => {
+  const q: MicmacQuadrants = {
+    autonomous: [],
+    dependent: [],
+    linkage: [],
+    driver: [],
+  };
+
+  points.forEach(p => {
+    if (p.drivingPower <= splitPoint && p.dependencePower <= splitPoint) {
+      q.autonomous.push(p);
+    } else if (p.drivingPower <= splitPoint && p.dependencePower > splitPoint) {
+      q.dependent.push(p);
+    } else if (p.drivingPower > splitPoint && p.dependencePower > splitPoint) {
+      q.linkage.push(p);
+    } else {
+      q.driver.push(p);
+    }
+  });
+  return q;
+};
 
 /**
  * Converts the SSIM dictionary to an Initial Reachability Matrix (IRM).
